@@ -14,7 +14,7 @@
 
 	Personal Access Token
 	i) 	cd to /home/pi
-	ii) 	type command: [gpg -d <user>-pat.txt] to decrypt the GPG file
+	ii) 	type command: [gpg -d <user>-pat.gpg] to decrypt the GPG file
 	iii) 	Access token is printed out, copy and paste :)
 
 6) Check Repository at https://github.com/Sxw88/FYP-Viv-Sxw
