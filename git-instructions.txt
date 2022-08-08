@@ -1,0 +1,12 @@
+1) cd to the directory of the project
+	(/home/pi/FYP-Viv-Sxw)
+
+2) type command:
+	git commit -m "Type short message here"
+
+3) type command:
+	git push -u origin master
+
+4) Check Repository at https://github.com/Sxw88/FYP-Viv-Sxw
+
+
