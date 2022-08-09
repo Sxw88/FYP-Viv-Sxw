@@ -14,5 +14,5 @@ if __name__=='__main__':
 
     #this part is just to test out the movement
     #move forward, stop, move backwards
-    srob.moveForward(0.5)
-    srob.moveBackward(0.5)
+    srob.moveForward(0.5, backwards=False)
+    srob.moveForward(0.5, backwards=True)
