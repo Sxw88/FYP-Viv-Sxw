@@ -88,9 +88,10 @@ if __name__=='__main__':
  
   pwm = PCA9685(0x40, debug=False)
   pwm.setPWMFreq(50)
-  while True:
-   # setServoPulse(2,2500)
-    for i in range(500,2500,10):  
-      pwm.setServoPulse(3,0)   
-      pwm.setServoPulse(15,0)
-      time.sleep(0.02)     
+  # setServoPulse(2,2500)
+  for i in range(500,2500,10):  
+    pwm.setServoPulse(3,0)   
+    pwm.setServoPulse(15,0)
+    time.sleep(0.02)     
+
+  
