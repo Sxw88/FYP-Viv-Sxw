@@ -28,20 +28,20 @@ class PCA9685:
     self.address = address
     self.debug = debug
     if (self.debug):
-      print("Reseting PCA9685")
+      print("[*]servo: Reseting PCA9685")
     self.write(self.__MODE1, 0x00)
 	
   def write(self, reg, value):
     "Writes an 8-bit value to the specified register/address"
     self.bus.write_byte_data(self.address, reg, value)
     if (self.debug):
-      print("I2C: Write 0x%02X to register 0x%02X" % (value, reg))
+      print("[*]servo: I2C: Write 0x%02X to register 0x%02X" % (value, reg))
 	  
   def read(self, reg):
     "Read an unsigned byte from the I2C device"
     result = self.bus.read_byte_data(self.address, reg)
     if (self.debug):
-      print("I2C: Device 0x%02X returned 0x%02X from reg 0x%02X" % (self.address, result & 0xFF, reg))
+      print("[*]servo: I2C: Device 0x%02X returned 0x%02X from reg 0x%02X" % (self.address, result & 0xFF, reg))
     return result
 	
   def setPWMFreq(self, freq):
@@ -51,11 +51,11 @@ class PCA9685:
     prescaleval /= float(freq)
     prescaleval -= 1.0
     if (self.debug):
-      print("Setting PWM frequency to %d Hz" % freq)
-      print("Estimated pre-scale: %d" % prescaleval)
+      print("[*]servo: Setting PWM frequency to %d Hz" % freq)
+      print("[*]servo: Estimated pre-scale: %d" % prescaleval)
     prescale = math.floor(prescaleval + 0.5)
     if (self.debug):
-      print("Final pre-scale: %d" % prescale)
+      print("[*]servo: Final pre-scale: %d" % prescale)
 
     oldmode = self.read(self.__MODE1);
     newmode = (oldmode & 0x7F) | 0x10        # sleep
@@ -72,7 +72,7 @@ class PCA9685:
     self.write(self.__LED0_OFF_L+4*channel, off & 0xFF)
     self.write(self.__LED0_OFF_H+4*channel, off >> 8)
     if (self.debug):
-      print("channel: %d  LED_ON: %d LED_OFF: %d" % (channel,on,off))
+      print("[*]servo: channel: %d  LED_ON: %d LED_OFF: %d" % (channel,on,off))
 	  
   def setServoPulse(self, channel, pulse):
     "Sets the Servo Pulse,The PWM frequency must be 50HZ"
