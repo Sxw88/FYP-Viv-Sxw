@@ -4,6 +4,8 @@
 #import math
 #import smbus
 
+import sys
+sys.path.append("/home/pi/FYP-Viv-Sxw")
 import SwarmRobot
 
 if __name__=='__main__':

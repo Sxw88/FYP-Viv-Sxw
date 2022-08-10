@@ -23,6 +23,7 @@ class SwarmRobot:
     time.sleep(time_til_stop)
     self.servo.setServoPulse(self.LEFT_WHEEL, 0)
     self.servo.setServoPulse(self.RIGHT_WHEEL, 0)
+    time.sleep(1)
 
   def forwardCycle(self, c_range=1):
     # movement based on the sample code, 0 to 180 degrees
@@ -64,32 +65,15 @@ class SwarmRobot:
       self.backwardCycle(cycles - math.floor(cycles))
 
   def tryMoveForward(self):
-    self.servo.setServoPulse(self.RIGHT_WHEEL, 1495)
-    self.servo.setServoPulse(self.LEFT_WHEEL, 1612)
-    
-    #constanst speed
-    time.sleep(3)
-    self.stopServo(0)
-    time.sleep(1)
-
-    self.servo.setServoPulse(self.LEFT_WHEEL, 1495)
-    self.servo.setServoPulse(self.RIGHT_WHEEL, 1612)
-    
-    #constanst speed
-    time.sleep(3)
-    self.stopServo(0)
-
-  
-  def nothing(self):
-    for i in range(50, 300, 10):
-      self.servo.setServoPulse(self.LEFT_WHEEL, 1550-i)
-      self.servo.setServoPulse(self.RIGHT_WHEEL, 1550+i)
+    for i in range(500, 2500, 10):
+      self.servo.setServoPulse(self.LEFT_WHEEL, i)
+      self.servo.setServoPulse(self.RIGHT_WHEEL, 3000-i)
       time.sleep(0.01)
     
-    #constanst speed
-    time.sleep(2)
-    self.stopServo(0)
+    #constanst speed then stops the servo 
+    self.stopServo(2)
 
+  def nothing(self):
     for i in range(300, 100, -20):
       self.servo.setServoPulse(self.LEFT_WHEEL, 1550-i)
       self.servo.setServoPulse(self.RIGHT_WHEEL, 1550+i)
