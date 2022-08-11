@@ -14,4 +14,4 @@ if __name__=='__main__':
 
     #this part is just to test out the movement
     #move forward, stop, move backwards
-    srob.tryMoveForward()
+    srob.testCode()
