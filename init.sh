@@ -1,6 +1,56 @@
 #!/bin/bash
 
 #initialisation script, run this after cloning the GitHub repo
+DIR=$(pwd)
+
+#functions
+function verify_pkg {
+  local REQUIRED_PKG=$1
+	local PKG_OK=$(dpkg-query -W --showformat='${Status}\n' $REQUIRED_PKG|grep "install ok installed")
+	local input="x"
+	
+	echo -n "[*] Checking for $REQUIRED_PKG : "
+	echo -e '\E[00;32m'"$PKG_OK"
+	tput sgr0	
+	#if package is not already installed
+	if [ "" = "$PKG_OK" ]; then 
+	  echo -en '\E[00;33m'"\033[1m[*] \033[0m"
+		tput sgr0	
+	  echo "$REQUIRED_PKG not found. Setting up $REQUIRED_PKG."
+	  sudo apt-get --yes install $REQUIRED_PKG 
+
+	  #check again for the required package
+	  PKG_OK=$(dpkg-query -W --showformat='${Status}\n' $REQUIRED_PKG|grep "install ok installed")
+	  echo -en '\E[00;33m'"\033[1m[*] \033[0m"
+		tput sgr0	
+	  echo -n "Checking again for $REQUIRED_PKG : " 
+	  echo -e '\E[00;32m'"$PKG_OK"
+		tput sgr0	
+	  if [ "" = "$PKG_OK" ]; then 
+		echo -en '\E[00;31m'"\033[1m[!] Error: \033[0m"
+		tput sgr0	
+		echo -n "Installation of $REQUIRED_PKG has failed.."
+		#get user input (Y/N) to proceed
+		while true
+		do
+			read -r -p " Proceed? (Y/N)" input
+			case $input in
+				[yY][eE][sS]|[yY])
+					echo "Proceeding with initialisation..."
+					break
+					;;
+				[nN][oO]|[nN])
+					echo "Aborting... {missing package $REQUIRED_PKG}"
+					exit 3
+					;;
+				*)
+					echo "Invalid Input."
+					;;
+			esac
+		done
+	  fi
+	fi
+}
 
 #checking if the script is being run as root:
 if [[ $EUID -ne 0 ]]; then
@@ -13,9 +63,9 @@ echo -en '\E[00;32m'"[*]"
 tput sgr0
 echo " Setting up aliases..."
 sudo echo '#adding custom aliases' >> /home/pi/.bashrc
-sudo echo 'alias fyp="cd /home/pi/FYP-Viv-Sxw"' >> /home/pi/.bashrc
+sudo echo 'alias fyp="cd $DIR"' >> /home/pi/.bashrc
 sudo echo 'alias test="./test.sh"' >> /home/pi/.bashrc
-sudo echo 'alias stop="/home/pi/test-scripts/stop.py"' >> /home/pi/.bashrc
+sudo echo 'alias stop="$DIR/test-scripts/stop.py"' >> /home/pi/.bashrc
 
 source /home/pi/.bashrc
 
@@ -48,16 +98,18 @@ if test -f "$FILE"; then
 	echo -e '\E[00;36m'"/backup/batman-adv/1/,etc,dhcpcd.conf"
 	tput sgr0	
 else
-	echo -en '\E[00;31m'"\033[1m[!]\033[0m\n"
+	echo -en '\E[00;31m'"\033[1m[!]\033[0m"
 	while true
 	do
 		read -r -p " dhcpcd.conf not found... Proceed? (Y/N)" input
 		case $input in
 			[yY][eE][sS]|[yY])
 				echo "Proceeding with initialisation..."
+				break
 				;;
 			[nN][oO]|[nN])
 				echo "Aborting... {dhcpcd.conf not found}"
+				exit 2
 				;;
 			*)
 				echo "Invalid Input."
@@ -76,16 +128,18 @@ if test -f "$FILE"; then
 	echo -e '\E[00;36m'"/backup/batman-adv/1/,etc,rc.local"
 	tput sgr0	
 else
-	echo -en '\E[00;31m'"\033[1m[!]\033[0m\n"
+	echo -en '\E[00;31m'"\033[1m[!]\033[0m"
 	while true
 	do
 		read -r -p " rc.local not found... Proceed? (Y/N)" input
 		case $input in
 			[yY][eE][sS]|[yY])
 				echo "Proceeding with initialisation..."
+				break
 				;;
 			[nN][oO]|[nN])
 				echo "Aborting... {rc.local not found}"
+				exit 2
 				;;
 			*)
 				echo "Invalid Input."
@@ -94,4 +148,19 @@ else
 	done
 fi
 
+#######################################
+# Check if dependencies are installed #
+#######################################
 
+#check for batctl (Required for BATMAN-adv)
+verify_pkg "batctl"
+
+####################################
+# Set up scripts to run at startup #
+####################################
+
+chmod +x start-batman-adv.sh
+#GREP_EXIT=$(grep -n 'exit 0' /etc/rc.local | cut -d: -f1)
+sudo grep -v "exit 0" /etc/rc.local > temp && sudo mv temp /etc/rc.local
+sudo echo "$DIR/start-batman-adv.sh &" >> /etc/rc.local
+sudo echo "exit 0" >> /etc/rc.local
