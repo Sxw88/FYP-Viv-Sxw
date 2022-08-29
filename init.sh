@@ -1,6 +1,9 @@
 #!/bin/bash
 
 #initialisation script, run this after cloning the GitHub repo
+DIR=$0
+DIR=${DIR::-7}
+cd $DIR
 DIR=$(pwd)
 
 #functions
@@ -62,40 +65,46 @@ fi
 echo -en '\E[00;32m'"[*]"
 tput sgr0
 echo " Setting up aliases..."
+offset=0
+grep -n "#adding custom aliases" /home/pi/.bashrc | cut -d: -f1 |
+	while LOOPER= read -r line ; do
+		line=$((line-offset))	
+		offset=$((offset+4))
+		line_p3=$((line+3))
+		var_d="d"
+		sudo sed -i "$line,$line_p3$var_d" /home/pi/.bashrc
+	done
 sudo echo '#adding custom aliases' >> /home/pi/.bashrc
-sudo echo 'alias fyp="cd $DIR"' >> /home/pi/.bashrc
+sudo echo "alias fyp=\"cd $DIR\"" >> /home/pi/.bashrc
 sudo echo 'alias test="./test.sh"' >> /home/pi/.bashrc
-sudo echo 'alias stop="$DIR/test-scripts/stop.py"' >> /home/pi/.bashrc
+sudo echo "alias stop=\"$DIR/test-scripts/stop.py\"" >> /home/pi/.bashrc
 
 source /home/pi/.bashrc
 
-###############################################
-# make backups of files which will be changed #
-###############################################
-#create directory to store the backups
-mkdir -p backup/batman/1
+# Create directory to store the backups
+sudo -u pi mkdir -p batman/backup/1
 
-#backup /etc/network/interfaces.d/wlan0 file if it exists
+# backup /etc/network/interfaces.d/wlan0 file if it exists
 FILE=/etc/network/interfaces.d/wlan0
 if test -f "$FILE"; then
-	sudo cp /etc/network/interfaces.d/wlan0 ./backup/batman/1/,etc,network,interfaces.d,wlan0
+	sudo cp /etc/network/interfaces.d/wlan0 ./batman/backup/1/,etc,network,interfaces.d,wlan0
 	echo -en '\E[00;32m'"[*]"
 	tput sgr0
 	echo -n " Discovered wlan0 file... making a backup to "
-	echo -e '\E[00;36m'"/backup/batman-adv/1/,etc,network,interfaces.d,wlan0"
+	echo -e '\E[00;36m'"./batman/backup/1/,etc,network,interfaces.d,wlan0"
 	tput sgr0	
 else
 	echo "[*] wlan0 file not found... Proceeding with the next step."
 fi
 
-#backup /etc/dhcpcd.conf file if it exists
+# backup /etc/dhcpcd.conf file if it exists
 FILE=/etc/dhcpcd.conf
 if test -f "$FILE"; then
-	sudo cp /etc/dhcpcd.conf ./backup/batman/1/,etc,dhcpcd.conf
+	sudo cp /etc/dhcpcd.conf ./batman/backup/1/,etc,dhcpcd.conf
 	echo -en '\E[00;32m'"[*]"
 	tput sgr0
 	echo -n " Discovered dhcpcd.conf file... making a backup to "
-	echo -e '\E[00;36m'"/backup/batman-adv/1/,etc,dhcpcd.conf"
+	echo -e '\E[00;36m'"./batman/backup/1/,etc,dhcpcd.conf"
 	tput sgr0	
 else
 	echo -en '\E[00;31m'"\033[1m[!]\033[0m"
@@ -118,14 +127,14 @@ else
 	done
 fi
 
-#backup /etc/rc.local file if it exists
+# backup /etc/rc.local file if it exists
 FILE=/etc/rc.local
 if test -f "$FILE"; then
-	sudo cp "/etc/rc.local" "./backup/batman/1/,etc,rc.local"
+	sudo cp "/etc/rc.local" "./batman/backup/1/,etc,rc.local"
 	echo -en '\E[00;32m'"[*]"
 	tput sgr0
 	echo -n " Discovered rc.local file... making a backup to "
-	echo -e '\E[00;36m'"/backup/batman-adv/1/,etc,rc.local"
+	echo -e '\E[00;36m'"./batman/backup/1/,etc,rc.local"
 	tput sgr0	
 else
 	echo -en '\E[00;31m'"\033[1m[!]\033[0m"
@@ -148,19 +157,12 @@ else
 	done
 fi
 
-#######################################
-# Check if dependencies are installed #
-#######################################
-
-#check for batctl (Required for BATMAN-adv)
+# Check if dependencies are installed
 verify_pkg "batctl"
 
-####################################
-# Set up scripts to run at startup #
-####################################
-
-chmod +x start-batman-adv.sh
-#GREP_EXIT=$(grep -n 'exit 0' /etc/rc.local | cut -d: -f1)
-sudo grep -v "exit 0" /etc/rc.local > temp && sudo mv temp /etc/rc.local
-sudo echo "$DIR/start-batman-adv.sh &" >> /etc/rc.local
-sudo echo "exit 0" >> /etc/rc.local
+# Make executable
+echo "[*] Making scripts executable..."
+sudo -u pi chmod +x test.sh
+sudo -u pi chmod +x batman/enable.sh
+sudo -u pi chmod +x batman/start-batman-adv.sh
+sudo -u pi chmod +x batman/revert.sh
