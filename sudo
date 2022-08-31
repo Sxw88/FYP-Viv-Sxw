@@ -1,0 +1,1 @@
+@reboot sleep 20 && /home/pi/FYP-Viv-Sxw/batman/start-batman-adv.sh /etc/crontab

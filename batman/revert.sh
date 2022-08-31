@@ -12,12 +12,11 @@ if [[ $EUID -ne 0 ]]; then
 	exit 1
 fi
 
-# Undo changes in /etc/rc.local
-sudo -u pi echo " " > $DIR/temp
-sudo grep -v "start-batman-adv.sh" /etc/rc.local > $DIR/temp && sudo mv $DIR/temp /etc/rc.local
+# One-liner to remove the cron job
+crontab -u root -l | grep -v 'start-batman-adv.sh' | crontab -u root -
 echo -en '\E[00;32m'"[*] "
 tput sgr0
-echo " Modified rc.local. Removed 2 lines."
+echo "Removed cron job which runs the script <start-batman-adv.sh>" 
 
 # Undo changes in /etc/dhcpcd.conf
 sudo -u pi echo " " > $DIR/temp

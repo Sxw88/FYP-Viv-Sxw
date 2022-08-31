@@ -11,17 +11,12 @@ if [[ $EUID -ne 0 ]]; then
 	exit 1
 fi
 
-# Set up scripts to run at startup
-sudo -u pi chmod +x $DIR/start-batman-adv.sh
-sudo -u pi echo " " > $DIR/temp
-sudo grep -v "exit 0" /etc/rc.local > $DIR/temp && sudo mv $DIR/temp /etc/rc.local
-sudo grep -v "start-batman-adv.sh" /etc/rc.local > $DIR/temp && sudo mv $DIR/temp /etc/rc.local
-sudo echo "$DIR/batman/start-batman-adv.sh &" >> /etc/rc.local
-sudo echo "exit 0" >> /etc/rc.local
+# One-liner to add cronjob which starts the script <start-batman-adv.sh> 20 seconds after rebooting
+echo -e "$(sudo crontab -u root -l)\n@reboot sleep 20 && /home/pi/FYP-Viv-Sxw/batman/start-batman-adv.sh &" | sudo crontab -u root -
+echo -en '\E[00;32m'"[*] "
+tput sgr0
+echo "Adding cron job..."
 
-echo "[*] Modified rc.local. New lines inserted at:"
-echo "  $(grep -n 'start-batman-adv.sh'  /etc/rc.local)"
-echo "  $(grep -n 'exit 0' /etc/rc.local)"
 
 # Create wlan0 network interface
 sudo cp $DIR/wlan0 /etc/network/interfaces.d/wlan0
@@ -54,5 +49,4 @@ echo -en '\E[00;36m'"/etc/dhcpcd.conf "
 tput sgr0
 echo "at line: "
 echo "  $(grep -n 'denyinterfaces wlan0' /etc/dhcpcd.conf)"
-
 
