@@ -55,3 +55,5 @@ echo "Starting BATMAN-ADV. Reboot for changes to take effect."
 sudo ifconfig wlan0 down
 sudo ./start-batman-adv.sh
 sudo service dhcpcd restart
+sudo iwconfig wlan0 mode Ad-Hoc
+sudo service networking restart

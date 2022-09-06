@@ -36,7 +36,7 @@ echo "Restarting wlan interface... Changes should take effect after a while."
 echo "  Reboot if otherwise."
 
 sudo ifconfig wlan0 down
-sudo ifconfig bat0 down
 sudo iwconfig wlan0 mode Managed
 sudo ifconfig wlan0 up
+sudo ifconfig bat0 down
 sudo service dhcpcd restart
