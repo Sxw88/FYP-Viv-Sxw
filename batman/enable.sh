@@ -50,3 +50,8 @@ tput sgr0
 echo "at line: "
 echo "  $(grep -n 'denyinterfaces wlan0' /etc/dhcpcd.conf)"
 
+#run start-batman-adv.sh
+echo "Starting BATMAN-ADV. Reboot for changes to take effect."
+sudo ifconfig wlan0 down
+sudo ./start-batman-adv.sh
+sudo service dhcpcd restart
