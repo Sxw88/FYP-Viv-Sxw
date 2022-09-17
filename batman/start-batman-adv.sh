@@ -10,4 +10,5 @@ sudo batctl gw_mode client
 sudo ifconfig wlan0 up
 sudo ifconfig bat0 up
 
-sudo ./get-IP.sh
+sleep 10
+sudo /home/pi/FYP-Viv-Sxw/batman/get-IP.sh > /home/pi/FYP-Viv-Sxw/batman/get-IP.log

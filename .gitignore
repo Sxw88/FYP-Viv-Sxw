@@ -2,6 +2,8 @@
 *.swo
 *.swp
 *~
+*.old
+*.log
 *.bak
 __pycache__/
 backup/
