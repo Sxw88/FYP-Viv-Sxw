@@ -163,7 +163,18 @@ verify_pkg "batctl"
 # Make executable
 echo "[*] Making scripts executable..."
 sudo chmod +x $DIR/**/*.sh
+sudo chmod +x $DIR/**/*.py
 
 # pip install python packages
+echo -e '\E[00;34m'"[*] Installing Python Packages"
+tput sgr0
 pip3 install bleak
-pip3 install BLE_GATT
+
+# Enable SSH
+sudo systemctl enable ssh
+sudo systemctl start ssh
+echo -en '\E[00;32m'"[*]"
+tput sgr0
+echo -n " starting SSH service ... "
+
+systemctl status ssh
