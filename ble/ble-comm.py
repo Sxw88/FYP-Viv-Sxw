@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import logging
 import dbus
@@ -34,7 +34,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logHandler = logging.StreamHandler()
-filelogHandler = logging.FileHandler("logs.log")
+filelogHandler = logging.FileHandler("ble-comm.log")
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logHandler.setFormatter(formatter)
 filelogHandler.setFormatter(formatter)
@@ -111,14 +111,12 @@ class TestCharacteristic(Characteristic):
     def WriteValue(self, value, options):        
         #decoded_value = repr(value)
         #logger.info("raw value: " + decoded_value)
-        #decoded_value = ''.join([str(v) for v in value])
-        decoded_value = ''
-        for v in value:
-            decoded_value = decoded_value + bytes(v).decode("utf-8")
+        decoded_value = ''.join([str(v) for v in value])
         logger.info("write value: " + decoded_value)
 
         # Write the value to somewhere
-        f = open("ble-comm.txt", "w")
+        f = open("output.txt", "w")
+        f.write("output:")
         f.write(decoded_value)
         f.close()
 

@@ -162,7 +162,8 @@ verify_pkg "batctl"
 
 # Make executable
 echo "[*] Making scripts executable..."
-sudo -u pi chmod +x test.sh
-sudo -u pi chmod +x batman/enable.sh
-sudo -u pi chmod +x batman/start-batman-adv.sh
-sudo -u pi chmod +x batman/revert.sh
+sudo chmod +x $DIR/**/*.sh
+
+# pip install python packages
+pip3 install bleak
+pip3 install BLE_GATT

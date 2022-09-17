@@ -17,7 +17,7 @@ while [[ 0 -eq 0 ]] ; do
 		echo Checking for IPV4 address: $IP_connected
 	done
 	
-	sleep 15
+	sleep 20
 
 	for a in {1..20} ; do
 
