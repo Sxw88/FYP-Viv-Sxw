@@ -166,9 +166,10 @@ sudo chmod +x $DIR/**/*.sh
 sudo chmod +x $DIR/**/*.py
 
 # pip install python packages
-echo -e '\E[00;34m'"[*] Installing Python Packages"
+echo -e '\E[00;36m'"[*] Installing Python Packages"
 tput sgr0
 pip3 install bleak
+pip3 install pydbus
 
 # Enable SSH
 sudo systemctl enable ssh

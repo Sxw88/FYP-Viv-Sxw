@@ -24,7 +24,8 @@ while (True):
     address = bytesAddressPair[1]
 
     clientMsg = "Message from Client: {}".format(message)
-    clientIP = "Client IP Address:{}".format(address)
+    clientIP = "Client IP Address: {}".format(address)
+    batmanIP = "Client's BATMAN Interface IP: {}".format(localIP)
 
     print(clientMsg)
     print(clientIP)

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# Creates a BLE peripheral device
+
 import logging
 import dbus
 import dbus.exceptions
@@ -34,7 +36,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logHandler = logging.StreamHandler()
-filelogHandler = logging.FileHandler("ble-comm.log")
+filelogHandler = logging.FileHandler("./logs/peripheral.log")
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logHandler.setFormatter(formatter)
 filelogHandler.setFormatter(formatter)

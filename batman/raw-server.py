@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import socket
 
 ETH_P_ALL = 3

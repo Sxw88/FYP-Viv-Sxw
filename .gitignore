@@ -5,6 +5,7 @@
 *.old
 *.log
 *.bak
+*.json
 __pycache__/
 backup/
 temp

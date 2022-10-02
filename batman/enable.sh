@@ -12,7 +12,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 # One-liner to add cronjob which starts the script <start-batman-adv.sh> 20 seconds after rebooting
-echo -e "$(sudo crontab -u root -l)\n@reboot sleep 20 && /home/pi/FYP-Viv-Sxw/batman/start-batman-adv.sh &" | sudo crontab -u root -
+echo -e "$(sudo crontab -u root -l)\n@reboot sleep 20 && /home/pi/FYP-Viv-Sxw/batman/start-batman-adv.sh > /home/pi/FYP-Viv-Sxw/batman/batman.log" | sudo crontab -u root -
 echo -en '\E[00;32m'"[*] "
 tput sgr0
 echo "Adding cron job..."
@@ -50,10 +50,13 @@ tput sgr0
 echo "at line: "
 echo "  $(grep -n 'denyinterfaces wlan0' /etc/dhcpcd.conf)"
 
+sudo reboot
+
 #run start-batman-adv.sh
-echo "Starting BATMAN-ADV. Reboot for changes to take effect."
 sudo ifconfig wlan0 down
-sudo ./start-batman-adv.sh
+sudo ./start-batman-adv.sh | tee ./batman.log 
+
+#restart services
 sudo service dhcpcd restart
 sudo iwconfig wlan0 mode Ad-Hoc
 sudo service networking restart
