@@ -6,6 +6,7 @@
 *.log
 *.bak
 *.json
+*.add
 __pycache__/
 backup/
 temp
