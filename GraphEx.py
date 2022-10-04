@@ -13,12 +13,14 @@ import zlib
 import json
 import sys
 sys.path.append("./ble")
-##import ble_rssi as blescan
+import ble_rssi as blescan
 
 LOCAL_BLE_MAC = "AA:AA:AA:AA:AA:AA"
+
 with open('mac.add', 'r') as f:
     LOCAL_BLE_MAC = f.readline()
-    LOCAL_BLE_MAC = LOCAL_BLE_MAC[:-1]
+    LOCAL_BLE_MAC = LOCAL_BLE_MAC[:-1].upper()
+    print(f"Local BLE/WLAN MAC Address: {LOCAL_BLE_MAC}")
 
 
 def makeKey(node1, node2):
@@ -77,7 +79,7 @@ def rssi_to_distance(rssi):
 def scanRSSI(timeout):
     """Scan RSSI of nearby BLE devices, and save info in JSON"""
     
-    ##blescan.runscan(timeout) 
+    blescan.runscan(timeout, -50) 
     # to avoid race condition, sleep for 1 second
     time.sleep(1)
     
@@ -91,9 +93,21 @@ def scanRSSI(timeout):
     for device in RSSI_LIST:
         dist = rssi_to_distance(int(RSSI_LIST[device]["RSSI"]))
         
-        time_passed = datetime.now() - datetime.strptime(RSSI_LIST[device]["last-seen"], "%Y-%m-%d,%H:%M:%S")
-        if time_passed.total_seconds() < 100000: 
-            NEW_LIST[makeKey(LOCAL_BLE_MAC, device)] = {"weight": dist, "timestamp": RSSI_LIST[device]["last-seen"]}
+        time_passed = datetime.now() - datetime.strptime(RSSI_LIST[device]["Last-Seen"], "%Y-%m-%d,%H:%M:%S")
+        if time_passed.total_seconds() < 3000: 
+            
+            node1 = LOCAL_BLE_MAC
+            node2 = device
+            if device < LOCAL_BLE_MAC:
+                node1 = device
+                node2 = LOCAL_BLE_MAC
+
+            NEW_LIST[makeKey(LOCAL_BLE_MAC, device)] = { 
+                    "MAC-1": node1,
+                    "MAC-2": node2,
+                    "weight": dist, 
+                    "timestamp": RSSI_LIST[device]["Last-Seen"]
+                    }
 
     # Write JSON data to file
     with open('GRAPH.json', 'w') as output_file:

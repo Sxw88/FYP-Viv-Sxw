@@ -11,7 +11,7 @@ import pydbus
 from gi.repository import GLib
 import json
 
-log_file = Path('logs/scan.log')
+log_file = Path('/home/pi/FYP-Viv-Sxw/ble/logs/scan.log')
 RSSI_THRESHOLD = -60
 
 def write_to_log(address, rssi):
@@ -19,7 +19,7 @@ def write_to_log(address, rssi):
     now = datetime.now()
     current_time = now.strftime('%H:%M:%S')
     with log_file.open('a') as dev_log:
-        dev_log.write(f'\033[32mDevice seen[{current_time}]: {address} @ {rssi} dBme\033[0m\n'
+        dev_log.write(f'\033[32mDevice seen[{current_time}]: {address} @ {rssi} dBme\033[0m\n')
 
 
 def getJSONData(J_LIST, BLE_MAC, key):
@@ -57,8 +57,8 @@ def update_RSSI(J_LIST, BLE_MAC, key, new_value):
 
 # read the JSON file and store contents in a list
 JSON_LIST = []
-with open('RSSI.json', 'r') as read_file:
-    JSON_LIST = json.load(read_file)
+with open('/home/pi/FYP-Viv-Sxw/ble/RSSI.json', 'r') as read_file:
+        JSON_LIST = json.load(read_file)
 
 bus = pydbus.SystemBus()
 mainloop = GLib.MainLoop()
@@ -82,8 +82,8 @@ class DeviceMonitor:
                 print(f"MAC Address Already Exists. {self.device_name} added to monitor {self.device.Address} @ {rssi} dBm")
             else:
                 self.device_name = '\033[1;33m' + "BLE-Device-" + str(self.device_id)  + '\033[0m'
-                print(f'{self.device_name} added to monitor {self.device.Address} @ {rssi} dBm')
-                JSON_LIST = saveInfo_RSSI(JSON_LIST, self.device.Address, self.device_name[11:-4], rssi)
+                print(f'\033[1;32mNEW: \033[0m{self.device_name} added to monitor {self.device.Address} @ {rssi} dBm')
+                JSON_LIST = saveInfo_RSSI(JSON_LIST, self.device.Address, self.device_name[7:-4], rssi)
 
 
     def prop_changed(self, iface, props_changed, props_removed):
@@ -99,8 +99,8 @@ class DeviceMonitor:
             else:
                 self.device_id = len(JSON_LIST)
                 self.device_name = '\033[1;33m' + "BLE-Device-" + str(self.device_id)  + '\033[0m'  
-                print(f'{self.device_name} added to monitor {self.device.Address} @ {rssi} dBm')
-                JSON_LIST = saveInfo_RSSI(JSON_LIST, self.device.Address, self.device_name[11:-4], rssi)
+                print(f'\033[1;32mNEW Device Seen: \033[0m {self.device_name} at address: {self.device.Address} @ {rssi} dBm')
+                JSON_LIST = saveInfo_RSSI(JSON_LIST, self.device.Address, self.device_name[7:-4], rssi)
 
 
 def end_discovery():
@@ -109,7 +109,7 @@ def end_discovery():
     adapter.StopDiscovery()
 
     # Write JSON data to file
-    with open('RSSI.json', 'w') as output_file:
+    with open('/home/pi/FYP-Viv-Sxw/ble/RSSI.json', 'w') as output_file:
         json.dump(JSON_LIST, output_file, indent=2)
 
 def new_iface(path, iface_props):
@@ -126,8 +126,11 @@ mngr.onInterfacesAdded = new_iface
 adapter = bus.get('org.bluez', '/org/bluez/hci0')
 adapter.DuplicateData = False
 
-def runscan(discovery_time):
 
+def runscan(discovery_time, rssi_threshold):
+    global RSSI_THRESHOLD
+    RSSI_THRESHOLD = rssi_threshold
+    
     # Iterate around already known devices and add to monitor
     print('Adding already known device to monitor...')
     mng_objs = mngr.GetManagedObjects()
@@ -147,6 +150,6 @@ def runscan(discovery_time):
         end_discovery()
 
 if __name__ == "__main__":
-    runscan()
+    runscan(20, -55)
 
 

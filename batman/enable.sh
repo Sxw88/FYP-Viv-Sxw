@@ -42,13 +42,15 @@ echo "  $(grep -n 'batman-adv' /etc/modules)"
 sudo -u pi echo " " > $DIR/temp
 sudo grep -v "denyinterfaces wlan0" /etc/dhcpcd.conf > $DIR/temp && sudo mv $DIR/temp /etc/dhcpcd.conf
 sudo echo 'denyinterfaces wlan0' >> /etc/dhcpcd.conf
+sudo echo 'noipv4ll' >> /etc/dhcpcd.conf
 echo -en '\E[00;32m'"[*] "
 tput sgr0
 echo -n "Appended to  "
 echo -en '\E[00;36m'"/etc/dhcpcd.conf "
 tput sgr0
-echo "at line: "
+echo "at lines: "
 echo "  $(grep -n 'denyinterfaces wlan0' /etc/dhcpcd.conf)"
+echo "  $(grep -n 'noipv4ll' /etc/dhcpcd.conf)"
 
 sudo reboot
 

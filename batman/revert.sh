@@ -21,9 +21,12 @@ echo "Removed cron job which runs the script <start-batman-adv.sh>"
 # Undo changes in /etc/dhcpcd.conf
 sudo -u pi echo " " > $DIR/temp
 sudo grep -v "denyinterfaces wlan0" /etc/dhcpcd.conf > $DIR/temp && sudo mv $DIR/temp /etc/dhcpcd.conf
+sudo grep -v "noipv4ll" /etc/dhcpcd.conf > $DIR/temp && sudo mv $DIR/temp /etc/dhcpcd.conf
+
 echo -en '\E[00;32m'"[*] "
 tput sgr0
-echo " Modified dhcpcd.local. Removed 1 line. <denyinterfaces wlan0>" 
+echo " Modified dhcpcd.local. Removed 1 line. <denyinterfaces wlan0>"
+echo " Modified dhcpcd.local. Removed 1 line. <noipv4ll>"
 
 sudo rm /etc/network/interfaces.d/wlan0
 echo -en '\E[00;32m'"[*] "

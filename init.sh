@@ -85,9 +85,9 @@ source /home/pi/.bashrc
 sudo -u pi mkdir -p batman/backup/1
 
 # Store MAC addresses into text file
-hciconfig | grep ^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$ > mac.add
-ifconfig bat0 | grep ^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$ >> mac.add
-ifconfig wlan0 | grep ^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$ >> mac.add
+#hciconfig | grep -o -E "([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})" > mac.add
+#ifconfig bat0 | grep -o -E "([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})" >> mac.add
+ifconfig wlan0 | grep -o -E "([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})" >> mac.add
 
 # backup /etc/network/interfaces.d/wlan0 file if it exists
 FILE=/etc/network/interfaces.d/wlan0

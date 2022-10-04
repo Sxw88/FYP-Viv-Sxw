@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import socket
+import os
 
 localIP     = "192.168.1.1"
 localPort   = 20001
@@ -25,7 +26,6 @@ while (True):
 
     clientMsg = "Message from Client: {}".format(message)
     clientIP = "Client IP Address: {}".format(address)
-    batmanIP = "Client's BATMAN Interface IP: {}".format(localIP)
 
     print(clientMsg)
     print(clientIP)

@@ -10,14 +10,14 @@ while [[ 0 -eq 0 ]] ; do
 	IP_connected=$(ifconfig bat0 | grep "inet ")
 	echo $IP_connected
 
-	while [[ -z $IP_connected ]] ; do
-		# repeat until bat0 is automatically assigned an IP
-		sleep 1
-		IP_connected=$(ifconfig bat0 | grep "inet ")
-		echo Checking for IPV4 address: $IP_connected
-	done
+	#while [[ -z $IP_connected ]] ; do
+		# repeat until bat0 is automatically assigned an IP with APIPA
+	#	sleep 1
+	#	IP_connected=$(ifconfig bat0 | grep "inet ")
+	#	echo Checking for IPV4 address: $IP_connected
+	#done
 	
-	sleep 20
+	sleep 10
 
 	for a in {1..20} ; do
 
