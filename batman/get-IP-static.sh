@@ -15,7 +15,8 @@ echo $print_interface
 
 # Get the static IP address stored in /home/pi/info.add
 print_static_IP=$(cat /home/pi/FYP-Viv-Sxw/info.add | grep 192.168.1.)
-sudo ifconfig $print_static_IP
+echo "Assigning static IP address: $print_static_IP"
+sudo ifconfig bat0 $print_static_IP
 
 while [[ 0 -eq 0 ]] ; do
 	# At this point, the script should have attempted to assign an IP via ipconfig
