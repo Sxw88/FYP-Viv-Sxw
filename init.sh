@@ -87,7 +87,14 @@ sudo -u pi mkdir -p batman/backup/1
 # Store MAC addresses into text file
 #hciconfig | grep -o -E "([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})" > mac.add
 #ifconfig bat0 | grep -o -E "([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})" >> mac.add
-ifconfig wlan0 | grep -o -E "([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})" >> mac.add
+ifconfig wlan0 | grep -o -E "([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})" > info.add
+
+# Store static IP address for BATMAN-ADV interface into text file
+static_IP="192.168.1.20"
+echo -e '\E[00;37m'"Please enter the Static IP Address which will be assigned to the BATMAN-ADV interface of this device."
+tput sgr0
+read -e -p "Enter static IP: " -i "192.168.1." static_IP
+echo $static_IP >> info.add
 
 # backup /etc/network/interfaces.d/wlan0 file if it exists
 FILE=/etc/network/interfaces.d/wlan0
@@ -164,6 +171,7 @@ fi
 
 # Check if dependencies are installed
 verify_pkg "batctl"
+verify_pkg "bluez"
 
 # Make executable
 echo "[*] Making scripts executable..."
@@ -173,7 +181,7 @@ sudo chmod +x $DIR/**/*.py
 # pip install python packages
 echo -e '\E[00;36m'"[*] Installing Python Packages"
 tput sgr0
-pip3 install bleak
+#pip3 install bleak
 pip3 install pydbus
 
 # Enable SSH
@@ -184,3 +192,5 @@ tput sgr0
 echo -n " starting SSH service ... "
 
 systemctl status ssh
+q
+

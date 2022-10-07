@@ -42,7 +42,7 @@ echo "  $(grep -n 'batman-adv' /etc/modules)"
 sudo -u pi echo " " > $DIR/temp
 sudo grep -v "denyinterfaces wlan0" /etc/dhcpcd.conf > $DIR/temp && sudo mv $DIR/temp /etc/dhcpcd.conf
 sudo echo 'denyinterfaces wlan0' >> /etc/dhcpcd.conf
-sudo echo 'noipv4ll' >> /etc/dhcpcd.conf
+#sudo echo 'noipv4ll' >> /etc/dhcpcd.conf
 echo -en '\E[00;32m'"[*] "
 tput sgr0
 echo -n "Appended to  "
@@ -50,15 +50,15 @@ echo -en '\E[00;36m'"/etc/dhcpcd.conf "
 tput sgr0
 echo "at lines: "
 echo "  $(grep -n 'denyinterfaces wlan0' /etc/dhcpcd.conf)"
-echo "  $(grep -n 'noipv4ll' /etc/dhcpcd.conf)"
+#echo "  $(grep -n 'noipv4ll' /etc/dhcpcd.conf)"
 
 sudo reboot
 
 #run start-batman-adv.sh
-sudo ifconfig wlan0 down
-sudo ./start-batman-adv.sh | tee ./batman.log 
+#sudo ifconfig wlan0 down
+#sudo ./start-batman-adv.sh | tee ./batman.log 
 
 #restart services
-sudo service dhcpcd restart
-sudo iwconfig wlan0 mode Ad-Hoc
-sudo service networking restart
+#sudo service dhcpcd restart
+#sudo iwconfig wlan0 mode Ad-Hoc
+#sudo service networking restart

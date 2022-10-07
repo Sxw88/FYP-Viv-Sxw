@@ -15,9 +15,9 @@ import sys
 sys.path.append("./ble")
 import ble_rssi as blescan
 
-LOCAL_BLE_MAC = "AA:AA:AA:AA:AA:AA"
+LOCAL_BLE_MAC = "BB:BB:BB:BB:BB:BB"
 
-with open('mac.add', 'r') as f:
+with open('info.add', 'r') as f:
     LOCAL_BLE_MAC = f.readline()
     LOCAL_BLE_MAC = LOCAL_BLE_MAC[:-1].upper()
     print(f"Local BLE/WLAN MAC Address: {LOCAL_BLE_MAC}")

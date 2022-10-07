@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# NO LONGER USED! 
+# get-IP-static.sh is used to assign IP address instead
+
 # print time at which script was run
 echo $(date)
 
