@@ -178,6 +178,13 @@ echo "[*] Making scripts executable..."
 sudo chmod +x $DIR/**/*.sh
 sudo chmod +x $DIR/**/*.py
 
+# Add cronjob to start the script <conf_BLE.sh> on boot
+echo -e "$(sudo crontab -u root -l)\n@reboot /home/pi/FYP-Viv-Sxw/ble/conf_BLE.sh > /home/pi/FYP-Viv-Sxw/ble/logs/startBLE.log" | sudo crontab -u root -
+echo -en '\E[00;32m'"[*] "
+tput sgr0
+echo "Adding cron job - BLE configurations"
+
+
 # pip install python packages
 echo -e '\E[00;36m'"[*] Installing Python Packages"
 tput sgr0
