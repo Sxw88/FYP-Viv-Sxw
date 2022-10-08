@@ -178,6 +178,8 @@ echo "[*] Making scripts executable..."
 sudo chmod +x $DIR/**/*.sh
 sudo chmod +x $DIR/**/*.py
 
+mkdir ble/logs
+
 # Add cronjob to start the script <conf_BLE.sh> on boot
 echo -e "$(sudo crontab -u root -l)\n@reboot /home/pi/FYP-Viv-Sxw/ble/conf_BLE.sh > /home/pi/FYP-Viv-Sxw/ble/logs/startBLE.log" | sudo crontab -u root -
 echo -en '\E[00;32m'"[*] "
@@ -190,6 +192,7 @@ echo -e '\E[00;36m'"[*] Installing Python Packages"
 tput sgr0
 #pip3 install bleak
 pip3 install pydbus
+pip3 install bluepy
 
 # Enable SSH
 sudo systemctl enable ssh
