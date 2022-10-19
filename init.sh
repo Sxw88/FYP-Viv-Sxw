@@ -193,7 +193,7 @@ tput sgr0
 echo "Appending to dhcpcd.conf for static IP assignment at eth0 interface"
 sudo echo "interface eth0" >> /etc/dhcpcd.conf
 sudo echo "static ip_address=192.168.5.1/24" >> /etc/dhcpcd.conf
-sudo echo "static routers=192.168.5.10" >> /etc/dhcpcd.conf
+#sudo echo "static routers=192.168.5.10" >> /etc/dhcpcd.conf
 
 # pip install python packages
 echo -e '\E[00;36m'"[*] Installing Python Packages"
