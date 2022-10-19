@@ -181,11 +181,19 @@ sudo chmod +x $DIR/**/*.py
 mkdir ble/logs
 
 # Add cronjob to start the script <conf_BLE.sh> on boot
-echo -e "$(sudo crontab -u root -l)\n@reboot /home/pi/FYP-Viv-Sxw/ble/conf_BLE.sh > /home/pi/FYP-Viv-Sxw/ble/logs/startBLE.log" | sudo crontab -u root -
-echo -en '\E[00;32m'"[*] "
+echo -en '\E[00;34m'"[*] "
 tput sgr0
 echo "Adding cron job - BLE configurations"
+echo -e "$(sudo crontab -u root -l)\n@reboot /home/pi/FYP-Viv-Sxw/ble/conf_BLE.sh > /home/pi/FYP-Viv-Sxw/ble/logs/startBLE.log" | sudo crontab -u root -
 
+# Appending to /etc/dhcpcd.conf
+# to assign static IP for eth0 interface
+echo -en '\E[00;34m'"[*] "
+tput sgr0
+echo "Appending to dhcpcd.conf for static IP assignment at eth0 interface"
+sudo echo "interface eth0" >> /etc/dhcpcd.conf
+sudo echo "static ip_address=192.168.5.1/24" >> /etc/dhcpcd.conf
+sudo echo "static routers=192.168.5.10" >> /etc/dhcpcd.conf
 
 # pip install python packages
 echo -e '\E[00;36m'"[*] Installing Python Packages"
