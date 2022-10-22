@@ -7,7 +7,7 @@ import sys
 sys.path.append("./Servo_Driver_HAT")
 import PCA9685
 
-class SwarmRobot:
+class ServoDriver:
   # Variables
   __LEFT_WHEEL           = 15     #port 3 = Left wheel
   __RIGHT_WHEEL          = 3      #port 15 = right wheel

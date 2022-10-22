@@ -84,17 +84,19 @@ source /home/pi/.bashrc
 # Create directory to store the backups
 sudo -u pi mkdir -p batman/backup/1
 
-# Store MAC addresses into text file
-#hciconfig | grep -o -E "([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})" > mac.add
-#ifconfig bat0 | grep -o -E "([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})" >> mac.add
-ifconfig wlan0 | grep -o -E "([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})" > info.add
 
-# Store static IP address for BATMAN-ADV interface into text file
+# Ask user for a unique static IP address for BATMAN-ADV interface,
+# which will be stored into text file
 static_IP="192.168.1.20"
-echo -e '\E[00;37m'"Please enter the Static IP Address which will be assigned to the BATMAN-ADV interface of this device."
+echo -e '\E[00;37m'"Please enter the unique Static IP Address which will be assigned to the BATMAN-ADV interface of this device."
 tput sgr0
 read -e -p "Enter static IP: " -i "192.168.1." static_IP
+
+# Store MAC addresses and Static IP info into text file
+ifconfig wlan0 | grep -o -E "([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})" > info.add
 echo $static_IP >> info.add
+hciconfig | grep -o -E "([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})" >> info.add
+
 
 # backup /etc/network/interfaces.d/wlan0 file if it exists
 FILE=/etc/network/interfaces.d/wlan0

@@ -14,10 +14,13 @@ import json
 import sys
 sys.path.append("./ble")
 import ble_rssi as blescan
+from ble_rssi import getJSONData
 
 LOCAL_BLE_MAC = "BB:BB:BB:BB:BB:BB"
 
 with open('info.add', 'r') as f:
+    LOCAL_BLE_MAC = f.readline()
+    LOCAL_BLE_MAC = f.readline()
     LOCAL_BLE_MAC = f.readline()
     LOCAL_BLE_MAC = LOCAL_BLE_MAC[:-1].upper()
     print(f"Local BLE/WLAN MAC Address: {LOCAL_BLE_MAC}")
@@ -76,10 +79,10 @@ def rssi_to_distance(rssi):
     
     return d
 
-def scanRSSI(timeout):
+def scanRSSI(timeout, fast_mode=False):
     """Scan RSSI of nearby BLE devices, and save info in JSON"""
     
-    blescan.runscan(timeout, -50) 
+    blescan.runscan(timeout, -80, fast_mode=fast_mode) 
     # to avoid race condition, sleep for 1 second
     time.sleep(1)
     
@@ -91,6 +94,9 @@ def scanRSSI(timeout):
     # format each device in a new JSON list with distance conversion
     NEW_LIST = {}
     for device in RSSI_LIST:
+        print("\n-------------Device-----------------")
+        print(RSSI_LIST[device])
+        print("------------------------------------\n")
         dist = rssi_to_distance(int(RSSI_LIST[device]["RSSI"]))
         
         time_passed = datetime.now() - datetime.strptime(RSSI_LIST[device]["Last-Seen"], "%Y-%m-%d,%H:%M:%S")
@@ -122,8 +128,26 @@ if __name__ == "__main__":
     
     print(makeKey(MAC1, MAC2))
     print(makeKey(MAC2, MAC1))
-
     
-    scanRSSI(20)
+    scanRSSI(10, fast_mode=True)
+
+    # Read MAC from device info.add
+    with open("info.add") as f:
+        MAC1 = f.readline()
+        MAC1 = f.readline()
+        MAC1 = f.readline()
+        MAC1 = MAC1[:-1]
+
+    print(MAC1)
+    MAC2 = "DC:A6:32:D3:4F:11"
+    
+    G_LIST = []
+    with open("GRAPH.json") as f:
+        G_LIST = json.load(f)
+        print(G_LIST)
+
+    print(makeKey(MAC1, MAC2))
+    print(getJSONData(G_LIST, makeKey(MAC1,MAC2), "weight"))
+
 
     

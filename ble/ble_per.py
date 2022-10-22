@@ -185,8 +185,15 @@ class PiAdvertisement(Advertisement):
             0xFFFF, [0x70, 0x74],
         )
         self.add_service_uuid(PiS1Service.PI_SVC_UUID)
-
-        self.add_local_name("Pi-BLE")
+        
+        # get local name which is linked to last octet of IP address
+        local_name = "Pi-BLE-"
+        with open("../info.add") as f_read:
+            line_to_read = f_read.readline()
+            line_to_read = f_read.readline()
+            local_name = local_name + line_to_read[10:-1]
+        self.add_local_name(local_name)
+        
         self.include_tx_power = True
 
 def register_ad_cb():

@@ -25,6 +25,7 @@ echo "Startup script is run as root"
 
 # make new empty JSON file
 echo "{}" > RSSI.json
+echo "non" > ../state
 
 sleep 10
 echo $(date)

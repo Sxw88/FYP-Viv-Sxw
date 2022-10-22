@@ -6,12 +6,12 @@
 
 import sys
 sys.path.append("/home/pi/FYP-Viv-Sxw")
-import SwarmRobot
+from ServoDriver import ServoDriver
 
 if __name__=='__main__':
     #create new SwarmRobot instance
-    srob = SwarmRobot.SwarmRobot()
+    srv = ServoDriver()
 
     #this part is just to test out the movement
     #move forward, stop, move backwards
-    srob.testCode()
+    srv.testCode()
