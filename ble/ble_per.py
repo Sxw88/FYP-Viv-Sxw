@@ -90,6 +90,7 @@ class PiS1Service(Service):
     def __init__(self, bus, index):
         Service.__init__(self, bus, index, self.PI_SVC_UUID, True)
         self.add_characteristic(TestCharacteristic(bus, 0, self))
+        self.add_characteristic(StateCharacteristic(bus, 1, self))
 
 
 class TestCharacteristic(Characteristic):
@@ -125,6 +126,33 @@ class TestCharacteristic(Characteristic):
         # Change the value of the characteristic
         self.value = value
 
+
+class StateCharacteristic(Characteristic):
+    uuid = "22222222-2222-2222-2222-222222222222"
+    description = b"current state of swarm robot"
+
+    def __init__(self, bus, index, service):
+        Characteristic.__init__(
+            self, bus, index, self.uuid, ["encrypt-read"], service,
+        )
+
+        self.value = bytearray("non", encoding="utf8")
+        self.add_descriptor(CharacteristicUserDescriptionDescriptor(bus, 1, self))
+
+    def ReadValue(self, options):
+        """Update the state value and then return value to requester"""
+        
+        with open("../state") as f_readstate:
+            updated_value = f_readstate.read()
+            self.value = bytearray(updated_value[:-1], encoding="utf8")
+
+        logger.info("read value: " + repr(self.value))
+        return self.value
+
+    def WriteValue(self, value, options):        
+        if not self.writable:
+            raise NotPermittedException()
+        self.value = value
 
 class CharacteristicUserDescriptionDescriptor(Descriptor):
     """

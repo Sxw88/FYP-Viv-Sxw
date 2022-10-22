@@ -10,11 +10,11 @@ from pathlib import Path
 import pydbus
 from gi.repository import GLib
 import json
-from ble_cen import checkService
+from ble_cen import readCharacteristic
 
 log_file = Path('/home/pi/FYP-Viv-Sxw/ble/logs/scan.log')
 RSSI_THRESHOLD = -90 # Not actually used
-CHECK_SERVICE_UUID = "12345678-9abc-def0-1234-56789abcdef0"
+SERVICE_UUID = "12345678-9abc-def0-1234-56789abcdef0"
 
 def write_to_log(address, rssi):
     """Write device and rssi values to a log file"""
@@ -36,10 +36,18 @@ def saveInfo_RSSI(J_LIST, BLE_MAC, field_name, field_RSSI):
     
     json_list = J_LIST
     timestamp = datetime.now().strftime("%Y-%m-%d,%H:%M:%S")
+    
+    state = "unk"
+    # get the state from the swarm robot
+    try:
+        CHARACTERISTIC_UUID = "22222222-2222-2222-2222-222222222222"
+        state = readCharacteristic(BLE_MAC, SERVICE_UUID, CHARACTERISTIC_UUID)
+    except:
+        print("\033[1;31mError:\033[0m Unable to read state of swarm robot")
 
     # New Key-Value pair added to JSON_LIST
     # Using the Bluetooth MAC as the unique key
-    json_list[BLE_MAC] = {"Name":field_name, "RSSI":field_RSSI, "Last-Seen":timestamp}
+    json_list[BLE_MAC] = {"Name":field_name, "RSSI":field_RSSI, "State":state, "Last-Seen":timestamp}
 
     return json_list
    
@@ -48,10 +56,19 @@ def update_RSSI(J_LIST, BLE_MAC, key, new_value):
     json_list = J_LIST
     obj_count = 0
     timestamp = datetime.now().strftime("%Y-%m-%d,%H:%M:%S")
+    
+    state = "unk"
+    # get the state from the swarm robot
+    try:
+        CHARACTERISTIC_UUID = "22222222-2222-2222-2222-222222222222"
+        state = readCharacteristic(BLE_MAC, SERVICE_UUID, CHARACTERISTIC_UUID)
+    except:
+        print("\033[1;31mError:\033[0m Unable to read state of swarm robot")
 
     try:
         json_list[BLE_MAC][key] = new_value
         json_list[BLE_MAC]["Last-Seen"] = timestamp 
+        json_list[BLE_MAC]["State"] = state
     except KeyError:
         print("\033[1;31mKey Error:\033[0m Device with specified MAC does not exist. Value not updated.")
 

@@ -104,6 +104,64 @@ def checkService(MAC, SERVICE_UUID, verbose=False):
         return False
 
 
+def readCharacteristic(MAC, SERVICE_UUID, CHARACTERISTIC_UUID, verbose=False):
+    print("\tReading from BLE device at MAC Address : " + MAC)
+    print("\twith service UUID                      : " + SERVICE_UUID)
+    print("\tand with characteristic UUID           : " + CHARACTERISTIC_UUID)
+
+    read_Char = None
+    
+    vprint("Connect to:" + MAC, v=verbose)
+    dev = btle.Peripheral(MAC)
+    vprint("\n--- dev ----------------------------", v=verbose)
+    vprint(type(dev), v=verbose)
+    vprint(dev, v=verbose)
+
+    vprint("\n--- dev.services -------------------", v=verbose)
+    for svc in dev.services:
+        vprint(str(svc), v=verbose)
+        
+    vprint("\n------------------------------------", v=verbose)
+    vprint("Get Service By UUID: " + SERVICE_UUID, v=verbose)
+    service_uuid = btle.UUID(SERVICE_UUID)
+    service = dev.getServiceByUUID(service_uuid)
+
+    vprint(service, v=verbose)
+    vprint("\n--- service.getCharacteristics() ---", v=verbose)
+    vprint(type(service.getCharacteristics()), v=verbose)
+    vprint(service.getCharacteristics(), v=verbose)
+
+    #----------------------------------------------
+    characteristics = dev.getCharacteristics()
+    vprint("\n--- dev.getCharacteristics() -------", v=verbose)
+    vprint(type(characteristics), v=verbose)
+    vprint(characteristics, v=verbose)
+        
+    read_value = ""
+    
+    for char in characteristics:
+        vprint("----------", v=verbose)
+        vprint(type(char), v=verbose)
+        vprint(char, v=verbose)
+        vprint(char.uuid, v=verbose)
+        if(char.uuid == CHARACTERISTIC_UUID ):
+            vprint("=== !CHARACTERISTIC_UUID matched! ==", v=verbose)
+            read_Char = char
+            vprint(char, v=verbose)
+            #print(dir(char))
+            #print(char.getDescriptors)
+            #print(char.propNames)
+            #print(char.properties)
+            #print(type(char.read()))
+            read_value = str(char.read())
+            read_value = read_value[2:-1]
+            print("\t\tRead characteristic: " + read_value)
+
+        #=============================================
+    
+    dev.disconnect()
+    vprint("\n--- bye ---\n", v=verbose)
+    return read_value
 
 if __name__ == "__main__":
     # Match MAC of peripheral
@@ -112,6 +170,7 @@ if __name__ == "__main__":
     # Match Service / Characteristic UUID in ble_per.py
     SERVICE_UUID = "12345678-9abc-def0-1234-56789abcdef0"
     CHARACTERISTIC_UUID = "11111111-1111-1111-1111-111111111111"
+    CHARACTERISTIC_UUID = "22222222-2222-2222-2222-222222222222"
 
     MESSAGE = "HELLO EARTHLINGS WE CXME IN PEACE"
     
@@ -119,4 +178,7 @@ if __name__ == "__main__":
     #writeCharacteristic(MAC, SERVICE_UUID, CHARACTERISTIC_UUID, MESSAGE, verbose=True)
 
     # Test check service function
-    print(checkService(MAC, SERVICE_UUID, verbose=True))
+    #print(checkService(MAC, SERVICE_UUID, verbose=True))
+
+    # Test readCharacteristic function
+    readCharacteristic(MAC, SERVICE_UUID, CHARACTERISTIC_UUID, verbose=True )

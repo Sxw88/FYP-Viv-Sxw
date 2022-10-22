@@ -1,1 +1,1 @@
-output:HELLO EARTHLINGS WE CXME IN PEACE
+output:hi
