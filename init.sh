@@ -182,6 +182,7 @@ sudo chmod +x $DIR/**/*.py
 mkdir ble/logs
 echo "{}" > ble/RSSI.json 
 echo "{}" > GRAPH.json
+echo "non" > state
 
 # Add cronjob to start the script <conf_BLE.sh> on boot
 echo -en '\E[00;34m'"[*] "
@@ -206,12 +207,11 @@ pip3 install pydbus
 pip3 install bluepy
 
 # Enable SSH
-sudo systemctl enable ssh
-sudo systemctl start ssh
 echo -en '\E[00;32m'"[*]"
 tput sgr0
 echo -n " starting SSH service ... "
+sudo systemctl enable ssh
+sudo systemctl start ssh
 
-systemctl status ssh
-q
+
 

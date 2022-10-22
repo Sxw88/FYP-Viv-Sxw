@@ -10,10 +10,10 @@ from pathlib import Path
 import pydbus
 from gi.repository import GLib
 import json
-import ble_cen
+from ble_cen import checkService
 
 log_file = Path('/home/pi/FYP-Viv-Sxw/ble/logs/scan.log')
-RSSI_THRESHOLD = -60
+RSSI_THRESHOLD = -90 # Not actually used
 CHECK_SERVICE_UUID = "12345678-9abc-def0-1234-56789abcdef0"
 
 def write_to_log(address, rssi):
@@ -31,9 +31,9 @@ def getJSONData(J_LIST, BLE_MAC, key):
         print("\033[1;31mKey Error:\033[0m Device with specified MAC does not exist")
 
 
-
 def saveInfo_RSSI(J_LIST, BLE_MAC, field_name, field_RSSI):
-    """Appends JSON data to list and save to file"""
+    """Appends JSON data to list"""
+    
     json_list = J_LIST
     timestamp = datetime.now().strftime("%Y-%m-%d,%H:%M:%S")
 
@@ -76,16 +76,19 @@ class DeviceMonitor:
         self.device = bus.get('org.bluez', path_obj)
         self.device.onPropertiesChanged = self.prop_changed
         rssi = self.device.GetAll('org.bluez.Device1').get('RSSI')
+        self.ori_name = self.device.GetAll('org.bluez.Device1').get('Name')
         self.device_name = "Device-Default-Name"
 
         if rssi is not None and int(rssi) > RSSI_THRESHOLD:
             if self.device.Address in JSON_LIST:
                 self.device_name = '\033[1;33m' + JSON_LIST[self.device.Address]["Name"] + '\033[0m'
-                print(f"MAC Address Already Exists. {self.device_name} added to monitor {self.device.Address} @ {rssi} dBm")
+                print(f"MAC Address Already Exists. {self.device_name} ({self.ori_name}) added to monitor {self.device.Address} @ {rssi} dBm")
             else:
                 self.device_name = '\033[1;33m' + "BLE-Device-" + str(self.device_id)  + '\033[0m'
-                print(f'\033[1;32mNEW: \033[0m{self.device_name} added to monitor {self.device.Address} @ {rssi} dBm')
-                JSON_LIST = saveInfo_RSSI(JSON_LIST, self.device.Address, self.device_name[7:-4], rssi)
+                print(f'\033[1;32mNEW: \033[0m{self.device_name} ({self.ori_name}) added to monitor {self.device.Address} @ {rssi} dBm')
+                if self.ori_name == "Pi-BLE":
+                    print("\tDevice saved.")
+                    JSON_LIST = saveInfo_RSSI(JSON_LIST, self.device.Address, self.device_name[7:-4], rssi)
 
 
     def prop_changed(self, iface, props_changed, props_removed):
@@ -95,14 +98,16 @@ class DeviceMonitor:
         if rssi is not None and int(rssi) > RSSI_THRESHOLD:
             if self.device.Address in JSON_LIST:
                 self.device_name = '\033[1;33m' + JSON_LIST[self.device.Address]["Name"] + '\033[0m'
-                print(f'\t\033[32mDevice Seen: \033[0m {self.device_name} at address: {self.device.Address} @ {rssi} dBm')
+                print(f'\t\033[32mDevice Seen: \033[0m {self.device_name} ({self.ori_name}) at address: {self.device.Address} @ {rssi} dBm')
                 write_to_log(self.device.Address, rssi)
                 JSON_LIST = update_RSSI(JSON_LIST, self.device.Address, "RSSI", rssi)
             else:
                 self.device_id = len(JSON_LIST)
                 self.device_name = '\033[1;33m' + "BLE-Device-" + str(self.device_id)  + '\033[0m'  
-                print(f'\033[1;32mNEW Device Seen: \033[0m {self.device_name} at address: {self.device.Address} @ {rssi} dBm')
-                JSON_LIST = saveInfo_RSSI(JSON_LIST, self.device.Address, self.device_name[7:-4], rssi)
+                print(f'\033[1;32mNEW Device Seen: \033[0m {self.device_name} ({self.ori_name}) at address: {self.device.Address} @ {rssi} dBm')
+                if self.ori_name == "Pi-BLE":
+                    print("\tDevice saved.")
+                    JSON_LIST = saveInfo_RSSI(JSON_LIST, self.device.Address, self.device_name[7:-4], rssi)
 
 
 def end_discovery():
@@ -152,6 +157,6 @@ def runscan(discovery_time, rssi_threshold):
         end_discovery()
 
 if __name__ == "__main__":
-    runscan(20, -55)
+    runscan(20, -90)
 
 

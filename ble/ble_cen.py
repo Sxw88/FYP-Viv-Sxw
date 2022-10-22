@@ -77,26 +77,33 @@ def checkService(MAC, SERVICE_UUID, verbose=False):
 
     print("\tConnecting to BLE device at MAC Address : " + MAC)
     print("\tChecking for Service with UUID          : " + SERVICE_UUID)
-
-    vprint("Connect to:" + MAC, v=verbose)
-    dev = btle.Peripheral(MAC)
-    vprint("\n--- dev ----------------------------", v=verbose)
-    vprint(type(dev), v=verbose)
-    vprint(dev, v=verbose)
-
-    vprint("\n--- dev.services -------------------", v=verbose)
-    for svc in dev.services:
-        vprint(str(svc), v=verbose)
-        
-    vprint("\n------------------------------------", v=verbose)
-    vprint("Get Service By UUID: " + SERVICE_UUID, v=verbose)
-    service_uuid = btle.UUID(SERVICE_UUID)
-    service = dev.getServiceByUUID(service_uuid)
-
-    vprint("Service: " + service, v=verbose)
-
     
-    
+    try:
+        dev = btle.Peripheral(MAC)
+        vprint("\n--- dev ----------------------------", v=verbose)
+        vprint(type(dev), v=verbose)
+        vprint(dev, v=verbose)
+
+        vprint("\n--- dev.services -------------------", v=verbose)
+        for svc in dev.services:
+            vprint(str(svc), v=verbose)
+            
+        vprint("\n------------------------------------", v=verbose)
+        vprint("Get Service By UUID: " + SERVICE_UUID, v=verbose)
+        service_uuid = btle.UUID(SERVICE_UUID)
+        try:
+            service = dev.getServiceByUUID(service_uuid)
+            vprint(service.uuid, v=verbose)
+            print("\033[1;32m[*] \033[0mService found." )
+            return True
+        except:
+            print("\033[1;31mException: \033[0mCan't find service with UUID: " + SERVICE_UUID)
+            return False
+    except:
+        print("\033[1;31mException: \033[0mCan't connect to device: " + MAC)
+        return False
+
+
 
 if __name__ == "__main__":
     # Match MAC of peripheral
@@ -109,7 +116,7 @@ if __name__ == "__main__":
     MESSAGE = "HELLO EARTHLINGS WE CXME IN PEACE"
     
     # Test write function
-    writeCharacteristic(MAC, SERVICE_UUID, CHARACTERISTIC_UUID, MESSAGE, verbose=True)
+    #writeCharacteristic(MAC, SERVICE_UUID, CHARACTERISTIC_UUID, MESSAGE, verbose=True)
 
     # Test check service function
-    checkService(MAC, SERVICE_UUID, verbose=True)
+    print(checkService(MAC, SERVICE_UUID, verbose=True))
