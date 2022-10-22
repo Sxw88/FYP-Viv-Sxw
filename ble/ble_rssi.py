@@ -10,9 +10,11 @@ from pathlib import Path
 import pydbus
 from gi.repository import GLib
 import json
+import ble_cen
 
 log_file = Path('/home/pi/FYP-Viv-Sxw/ble/logs/scan.log')
 RSSI_THRESHOLD = -60
+CHECK_SERVICE_UUID = "12345678-9abc-def0-1234-56789abcdef0"
 
 def write_to_log(address, rssi):
     """Write device and rssi values to a log file"""
@@ -21,13 +23,13 @@ def write_to_log(address, rssi):
     with log_file.open('a') as dev_log:
         dev_log.write(f'\033[32mDevice seen[{current_time}]: {address} @ {rssi} dBme\033[0m\n')
 
-
 def getJSONData(J_LIST, BLE_MAC, key):
     """Gets JSON Data from List"""
     try:
         return J_LIST[BLE_MAC][key]
     except KeyError:
         print("\033[1;31mKey Error:\033[0m Device with specified MAC does not exist")
+
 
 
 def saveInfo_RSSI(J_LIST, BLE_MAC, field_name, field_RSSI):

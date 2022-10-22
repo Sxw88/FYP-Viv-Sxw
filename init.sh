@@ -178,7 +178,10 @@ echo "[*] Making scripts executable..."
 sudo chmod +x $DIR/**/*.sh
 sudo chmod +x $DIR/**/*.py
 
+# make log directory, and add empty json files
 mkdir ble/logs
+echo "{}" > ble/RSSI.json 
+echo "{}" > GRAPH.json
 
 # Add cronjob to start the script <conf_BLE.sh> on boot
 echo -en '\E[00;34m'"[*] "

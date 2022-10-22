@@ -26,7 +26,7 @@ def writeCharacteristic(MAC, SERVICE_UUID, CHARACTERISTIC_UUID, TO_WRITE, verbos
         vprint(str(svc), v=verbose)
         
     vprint("\n------------------------------------", v=verbose)
-    vprint("Get Serice By UUID: " + SERVICE_UUID, v=verbose)
+    vprint("Get Service By UUID: " + SERVICE_UUID, v=verbose)
     service_uuid = btle.UUID(SERVICE_UUID)
     service = dev.getServiceByUUID(service_uuid)
 
@@ -72,6 +72,32 @@ def writeCharacteristic(MAC, SERVICE_UUID, CHARACTERISTIC_UUID, TO_WRITE, verbos
     dev.disconnect()
     vprint("\n--- bye ---\n", v=verbose)
 
+
+def checkService(MAC, SERVICE_UUID, verbose=False):
+
+    print("\tConnecting to BLE device at MAC Address : " + MAC)
+    print("\tChecking for Service with UUID          : " + SERVICE_UUID)
+
+    vprint("Connect to:" + MAC, v=verbose)
+    dev = btle.Peripheral(MAC)
+    vprint("\n--- dev ----------------------------", v=verbose)
+    vprint(type(dev), v=verbose)
+    vprint(dev, v=verbose)
+
+    vprint("\n--- dev.services -------------------", v=verbose)
+    for svc in dev.services:
+        vprint(str(svc), v=verbose)
+        
+    vprint("\n------------------------------------", v=verbose)
+    vprint("Get Service By UUID: " + SERVICE_UUID, v=verbose)
+    service_uuid = btle.UUID(SERVICE_UUID)
+    service = dev.getServiceByUUID(service_uuid)
+
+    vprint("Service: " + service, v=verbose)
+
+    
+    
+
 if __name__ == "__main__":
     # Match MAC of peripheral
     MAC = "dc:a6:32:d3:4f:11"
@@ -84,3 +110,6 @@ if __name__ == "__main__":
     
     # Test write function
     writeCharacteristic(MAC, SERVICE_UUID, CHARACTERISTIC_UUID, MESSAGE, verbose=True)
+
+    # Test check service function
+    checkService(MAC, SERVICE_UUID, verbose=True)
