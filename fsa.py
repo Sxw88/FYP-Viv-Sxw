@@ -116,7 +116,7 @@ class Initialisation(State):
 
             # Scan and check for peers which are online
             print("\nScanning for peers (20 seconds):")
-            #scanRSSI(20)
+            scanRSSI(20)
             
             # Check for any anchored peers from RSSI.json file
             with open("./ble/RSSI.json", "r") as f_rssi:

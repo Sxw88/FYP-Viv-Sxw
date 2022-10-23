@@ -12,10 +12,11 @@ from gi.repository import GLib
 import json
 from ble_cen import readCharacteristic
 
-log_file = Path('/home/pi/FYP-Viv-Sxw/ble/logs/scan.log')
-RSSI_THRESHOLD = -90 # Not actually used
-SERVICE_UUID = "12345678-9abc-def0-1234-56789abcdef0"
-SCAN_FAST_MODE = False
+log_file        = Path('/home/pi/FYP-Viv-Sxw/ble/logs/scan.log')
+RSSI_THRESHOLD  = -90 # Not actually used
+SERVICE_UUID    = "12345678-9abc-def0-1234-56789abcdef0"
+SCAN_FAST_MODE  = False
+SCAN_SHOW_ALL   = False
 
 def write_to_log(address, rssi):
     """Write device and rssi values to a log file"""
@@ -65,8 +66,9 @@ def update_RSSI(J_LIST, BLE_MAC, key, new_value):
     timestamp = datetime.now().strftime("%Y-%m-%d,%H:%M:%S")
     
     state = "unk"
+
     # get the state from the swarm robot
-    if SCAN_FAST_MODE == False:
+    if SCAN_FAST_MODE == False or getJSONData(json_list, BLE_MAC, "State") == "anc":
         # Query the current mode via BT central client
         try:
             CHARACTERISTIC_UUID = "22222222-2222-2222-2222-222222222222"
@@ -100,47 +102,56 @@ class DeviceMonitor:
     def __init__(self, path_obj):
         
         global JSON_LIST
+        global SCAN_SHOW_ALL
+
         self.device_id = len(JSON_LIST)
 
         self.device = bus.get('org.bluez', path_obj)
         self.device.onPropertiesChanged = self.prop_changed
         rssi = self.device.GetAll('org.bluez.Device1').get('RSSI')
+        
         self.ori_name = self.device.GetAll('org.bluez.Device1').get('Name')
         if self.ori_name == None:
             self.ori_name = "Nameless-Device"
         self.device_name = "Device-Default-Name"
-
-        if rssi is not None and int(rssi) > RSSI_THRESHOLD:
-            if self.device.Address in JSON_LIST:
-                self.device_name = '\033[1;33m' + JSON_LIST[self.device.Address]["Name"] + '\033[0m'
-                print(f"MAC Address Already Exists. {self.device_name} ({self.ori_name}) added to monitor {self.device.Address} @ {rssi} dBm")
-            else:
-                self.device_name = '\033[1;33m' + "BLE-Device-" + str(self.device_id)  + '\033[0m'
-                print(f'\033[1;32mNEW: \033[0m{self.device_name} ({self.ori_name}) added to monitor {self.device.Address} @ {rssi} dBm')
-                if "Pi-BLE" in self.ori_name:
-                    print("\tDevice saved.")
-                    #JSON_LIST = saveInfo_RSSI(JSON_LIST, self.device.Address, self.device_name[7:-4], rssi)
-                    JSON_LIST = saveInfo_RSSI(JSON_LIST, self.device.Address, self.ori_name, rssi)
+        
+        if SCAN_SHOW_ALL == True or self.ori_name != "Nameless-Device": 
+            if rssi is not None and int(rssi) > RSSI_THRESHOLD:
+                if self.device.Address in JSON_LIST:
+                    self.device_name = '\033[1;33m' + JSON_LIST[self.device.Address]["Name"] + '\033[0m'
+                    print(f"MAC Address Already Exists. {self.device_name} ({self.ori_name}) added to monitor {self.device.Address} @ {rssi} dBm")
+                else:
+                    self.device_name = '\033[1;33m' + "BLE-Device-" + str(self.device_id)  + '\033[0m'
+                    print(f'\033[1;32mNEW: \033[0m{self.device_name} ({self.ori_name}) added to monitor {self.device.Address} @ {rssi} dBm')
+                    if "Pi-BLE" in self.ori_name:
+                        print("\tDevice saved.")
+                        #JSON_LIST = saveInfo_RSSI(JSON_LIST, self.device.Address, self.device_name[7:-4], rssi)
+                        JSON_LIST = saveInfo_RSSI(JSON_LIST, self.device.Address, self.ori_name, rssi)
 
 
     def prop_changed(self, iface, props_changed, props_removed):
         """method to be called when a property value on a device changes"""
+        
         global JSON_LIST
+        global SCAN_SHOW_ALL
+
         rssi = props_changed.get('RSSI', None)
-        if rssi is not None and int(rssi) > RSSI_THRESHOLD:
-            if self.device.Address in JSON_LIST:
-                self.device_name = '\033[1;33m' + JSON_LIST[self.device.Address]["Name"] + '\033[0m'
-                print(f'\t\033[32mDevice Seen: \033[0m {self.device_name} ({self.ori_name}) at address: {self.device.Address} @ {rssi} dBm')
-                write_to_log(self.device.Address, rssi)
-                JSON_LIST = update_RSSI(JSON_LIST, self.device.Address, "RSSI", rssi)
-            else:
-                self.device_id = len(JSON_LIST)
-                self.device_name = '\033[1;33m' + "BLE-Device-" + str(self.device_id)  + '\033[0m'  
-                print(f'\033[1;32mNEW Device Seen: \033[0m {self.device_name} ({self.ori_name}) at address: {self.device.Address} @ {rssi} dBm')
-                if "Pi-BLE" in self.ori_name:
-                    print("\tDevice saved.")
-                    #JSON_LIST = saveInfo_RSSI(JSON_LIST, self.device.Address, self.device_name[7:-4], rssi)
-                    JSON_LIST = saveInfo_RSSI(JSON_LIST, self.device.Address, self.ori_name, rssi)
+        
+        if SCAN_SHOW_ALL == True or self.ori_name != "Nameless-Device":
+            if rssi is not None and int(rssi) > RSSI_THRESHOLD:
+                if self.device.Address in JSON_LIST:
+                    self.device_name = '\033[1;33m' + JSON_LIST[self.device.Address]["Name"] + '\033[0m'
+                    print(f'\t\033[32mDevice Seen: \033[0m {self.device_name} ({self.ori_name}) at address: {self.device.Address} @ {rssi} dBm')
+                    write_to_log(self.device.Address, rssi)
+                    JSON_LIST = update_RSSI(JSON_LIST, self.device.Address, "RSSI", rssi)
+                else:
+                    self.device_id = len(JSON_LIST)
+                    self.device_name = '\033[1;33m' + "BLE-Device-" + str(self.device_id)  + '\033[0m'  
+                    print(f'\033[1;32mNEW Device Seen: \033[0m {self.device_name} ({self.ori_name}) at address: {self.device.Address} @ {rssi} dBm')
+                    if "Pi-BLE" in self.ori_name:
+                        print("\tDevice saved.")
+                        #JSON_LIST = saveInfo_RSSI(JSON_LIST, self.device.Address, self.device_name[7:-4], rssi)
+                        JSON_LIST = saveInfo_RSSI(JSON_LIST, self.device.Address, self.ori_name, rssi)
 
 
 def end_discovery():
@@ -167,12 +178,16 @@ adapter = bus.get('org.bluez', '/org/bluez/hci0')
 adapter.DuplicateData = False
 
 
-def runscan(discovery_time, rssi_threshold, fast_mode=False):
+def runscan(discovery_time, rssi_threshold, fast_mode=False, show_all=False):
+    
     global RSSI_THRESHOLD
     RSSI_THRESHOLD = rssi_threshold
 
     global SCAN_FAST_MODE
     SCAN_FAST_MODE = fast_mode
+
+    global SCAN_SHOW_ALL
+    SCAN_SHOW_ALL = show_all
     
     # Iterate around already known devices and add to monitor
     print('Adding already known device to monitor...')
