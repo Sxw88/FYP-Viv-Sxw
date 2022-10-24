@@ -7,16 +7,23 @@ import json
 import sys
 
 from abc import ABC, abstractmethod
-from GraphEx import scanRSSI, makeKey, LOCAL_BLE_MAC
+from GraphEx import (
+        scanRSSI, 
+        makeKey, 
+        getDistance, 
+        getAngletoRefNode, 
+        LOCAL_BLE_MAC
+        )
 from ServoDriver import ServoDriver
 
 sys.path.append("./ble")
 from ble_rssi import getJSONData
 
-next_step = "non"
-srv = None      # Servo Driver Object
-REF1 = None     # Reference Node 1
-REF2 = None     # Reference Node 2
+next_step   = "non"
+adist       = 50        # How many centimeters apart between the swarm robots at anchored state
+srv         = None      # Servo Driver Object
+REF1        = None      # Reference Node 1
+REF2        = None      # Reference Node 2
 
 # The Finite State Automata (FSA) class is the context. It should be initiated with a default state.
 class FSA:
@@ -116,12 +123,13 @@ class Initialisation(State):
 
             # Scan and check for peers which are online
             print("\nScanning for peers (20 seconds):")
-            scanRSSI(20)
+            #scanRSSI(20)
             
             # Check for any anchored peers from RSSI.json file
             with open("./ble/RSSI.json", "r") as f_rssi:
                 RSSI_LIST = json.load(f_rssi)
                 ANC_LIST = {}
+                IA_LIST = {}
 
                 print("Checking for peers in anchored state:")
 
@@ -136,14 +144,31 @@ class Initialisation(State):
                                 "RSSI": getJSONData(RSSI_LIST, device, "RSSI"),
                                 "Last-Seen": getJSONData(RSSI_LIST, device, "Last-Seen")
                                 }
+                        
+                        IA_LIST[device] = {    
+                                "Name": getJSONData(RSSI_LIST, device, "Name"),
+                                "RSSI": getJSONData(RSSI_LIST, device, "RSSI"),
+                                "Last-Seen": getJSONData(RSSI_LIST, device, "Last-Seen")
+                                }
+                    if device_state == "i-a" or device_state == "i2a":
+                        IA_LIST[device] = {    
+                                "Name": getJSONData(RSSI_LIST, device, "Name"),
+                                "RSSI": getJSONData(RSSI_LIST, device, "RSSI"),
+                                "Last-Seen": getJSONData(RSSI_LIST, device, "Last-Seen")
+                                }
 
-                print("\nList of Anchored devices")
-                print(ANC_LIST)
-                
+
+                print("\nList of Anchored/Anchoring devices")
+                print(IA_LIST)
+                print(" ")
+
                 if (len(ANC_LIST) >= 2):
+                    
                     # End Initialisation state and enter Localization state
                     next_step = "lcl"
-                else:
+
+                elif (len(IA_LIST) < 2):  # No peers who are in an anchoring state
+
                     # Enter Initialization-Anchoring state if peers > 0
                     if (len(RSSI_LIST) >= 1): 
                         next_step = "i-a"
@@ -162,6 +187,7 @@ class Initialisation(State):
 
                         for device in RSSI_LIST:
                             device_uID = getJSONData(RSSI_LIST, device, "Name")
+                            print("Device: " + device_uID)
                             device_uID = device_uID[7:]
 
                             # Comparison of unique IDs, 
@@ -193,12 +219,17 @@ class Initialisation(State):
                         next_step = "ini"
                         print("\033[1;33m[*]\033[0m No peers are online. Script will sleep for 5 seconds and try again.")
                         time.sleep(5)
+                else:
+                    # Stay in Initialisation loop
+                    next_step = "ini"
+                    print("\033[1;33m[*]\033[0m Detected peers currently in Init-Anchoring state. Script will sleep for 5 seconds and try again.")
+                    time.sleep(5)
 
 
     
     # The robot starts to anchor itself if no other reference points can be found
     def startInitAnchoring(self) -> None:
-        print("\033[1;33m[*]\033[0m Switching to the Anchoring state...")
+        print("\033[1;33m[*]\033[0m Switching to the Initialisation-Anchoring state...")
         print("\n-------------------------------------------------------------------------------\n")
         self.fsa.setFSA(InitAnchoring())
 
@@ -235,28 +266,62 @@ class InitAnchoring(State):
         elif next_step == "i2a":
             # Need to check the distance between this robot and first anchored robot
             
-            mdist = 20 # Initialize moving distance to 20 (centimeters)
-            rdist = 0  # Read the distance to the anchor node (stored in GRAPH.json)
+            mdist  = 20 # Initialize moving distance to 20 (centimeters)
+            rdist1 = 0  # Read the distance to the anchor node (stored in GRAPH.json)
+            rdist2 = 0
             
-            with open("GRAPH.json", "r") as f_read:
-                G_LIST = json.load(f_read)
-                rdist = int(float(getJSONData(G_LIST, makeKey(LOCAL_BLE_MAC, REF1), "weight"))*100)
-           
-            print("Current Estimated Distance to Reference Node: " + str(rdist) + " centimeters")
+            rdist1 = getDistance(LOCAL_BLE_MAC, REF1)
             
-            # Change to while not if
-            if next_step != "anc":    
-                
-                scanRSSI(10, fast_mode=True)
-                
-                with open("GRAPH.json", "r") as f_read:
-                    G_LIST = json.load(f_read)
-                    rdist = int(float(getJSONData(G_LIST, makeKey(LOCAL_BLE_MAC, REF1), "weight"))*100)
-                print("Current Estimated Distance to Reference Node: " + str(rdist) + " centimeters")
-                
+            # Move a fixed distance and then determine new distance to the reference node
+            srv.moveStraight(mdist)
+            scanRSSI(10, fast_mode=True)
+            rdist2 = getDistance(LOCAL_BLE_MAC, REF1)
+            
+            # Attempt clockwise rotation first
+            rot = getAngletoRefNode(rdist1, rdist2, mdist)
+            srv.rotateSelf(rot, clockwise=True)
 
-                #srv.moveStraight(20)
-                next_step = "anc"
+            # Move forward/backwards x meters to move to desired distance
+            mdist = rdist2 - adist
+            if mdist < 0:
+                srv.moveStraight(0-mdist, backwards=True)
+            else:    
+                srv.moveStraight(mdist)
+
+            # Scan and Check the new distance
+            scanRSSI(10, fast_mode=True)
+            rdist1 =  getDistance(LOCAL_BLE_MAC, REF1)
+            
+            if rdist1 < adist + 5 and rdist > adist -5:
+                # if distance is acceptable within margin error 10 cm
+                print("Estimated distance to reference node: " + str(rdist1) + " centimeters. ")
+                print("\033[32mProceeding to Anchored state\033[0m")
+            else:
+                # reverse to previous position and repeat in another direction
+                print("Estimated distance to reference node: " + str(rdist1) + " centimeters. ")
+                print("\033[1;34mRepeating anchoring process ...\033[0m")
+                
+                if mdist < 0:
+                    srv.moveStraight(0-mdist, backwards=False)
+                else: 
+                    srv.moveStraight(mdist, backwards=True)
+
+                # Attempt rotation in anticlockwise direction
+                rot = rot*2
+                srv.rotateSelf(rot, clockwise=False)
+
+                # Move forward/backwards x meters to move to desired distance
+                mdist = rdist2 - adist
+                if mdist < 0:
+                    srv.moveStraight(0-mdist, backwards=True)
+                else:    
+                    srv.moveStraight(mdist)
+
+                # Scan and Check the new distance
+                scanRSSI(10, fast_mode=True)
+                rdist1 =  getDistance(LOCAL_BLE_MAC, REF1)
+                
+            next_step = "anc"
 
     # Proceeds to Anchored state 
     def startAnchored(self) -> None:
@@ -505,3 +570,4 @@ if __name__ == "__main__":
                                              └────────────────────────┘
 
 """
+
