@@ -68,7 +68,7 @@ def update_RSSI(J_LIST, BLE_MAC, key, new_value):
     state = "unk"
 
     # get the state from the swarm robot
-    if SCAN_FAST_MODE == False or getJSONData(json_list, BLE_MAC, "State") == "anc":
+    if SCAN_FAST_MODE == False and getJSONData(json_list, BLE_MAC, "State") != "anc":
         # Query the current mode via BT central client
         try:
             CHARACTERISTIC_UUID = "22222222-2222-2222-2222-222222222222"
@@ -208,6 +208,6 @@ def runscan(discovery_time, rssi_threshold, fast_mode=False, show_all=False):
         end_discovery()
 
 if __name__ == "__main__":
-    runscan(20, -90)
+    runscan(5, -90, fast_mode=True)
 
 

@@ -112,7 +112,7 @@ class Initialisation(State):
         # Initialize the Servo Driver object
         global srv
         srv = ServoDriver()
-        #srv.testCode() # rotate 360 degrees
+        srv.testCode() # rotate 360 degrees
         
         while next_step == "ini":
             """
@@ -123,7 +123,7 @@ class Initialisation(State):
 
             # Scan and check for peers which are online
             print("\nScanning for peers (20 seconds):")
-            #scanRSSI(20)
+            scanRSSI(20)
             
             # Check for any anchored peers from RSSI.json file
             with open("./ble/RSSI.json", "r") as f_rssi:
@@ -266,7 +266,7 @@ class InitAnchoring(State):
         elif next_step == "i2a":
             # Need to check the distance between this robot and first anchored robot
             
-            mdist  = 20 # Initialize moving distance to 20 (centimeters)
+            mdist  = 50 # Initialize moving distance to 20 (centimeters)
             rdist1 = 0  # Read the distance to the anchor node (stored in GRAPH.json)
             rdist2 = 0
             
@@ -278,7 +278,21 @@ class InitAnchoring(State):
             rdist2 = getDistance(LOCAL_BLE_MAC, REF1)
             
             # Attempt clockwise rotation first
-            rot = getAngletoRefNode(rdist1, rdist2, mdist)
+            rot = -1
+            while rot == -1:
+                rot = getAngletoRefNode(rdist1, rdist2, mdist)
+
+                if rot == -1:
+                    scanRSSI(10, fast_mode=True)
+                    rdist1 = getDistance(LOCAL_BLE_MAC, REF1)
+
+                    # Move a fixed distance and then 
+                    # determine new distance to the reference node
+                    srv.moveStraight(mdist)
+                    scanRSSI(10, fast_mode=True)
+                    rdist2 = getDistance(LOCAL_BLE_MAC, REF1)
+
+
             srv.rotateSelf(rot, clockwise=True)
 
             # Move forward/backwards x meters to move to desired distance
@@ -292,7 +306,7 @@ class InitAnchoring(State):
             scanRSSI(10, fast_mode=True)
             rdist1 =  getDistance(LOCAL_BLE_MAC, REF1)
             
-            if rdist1 < adist + 5 and rdist > adist -5:
+            if rdist1 < adist + 5 and rdist1 > adist -5:
                 # if distance is acceptable within margin error 10 cm
                 print("Estimated distance to reference node: " + str(rdist1) + " centimeters. ")
                 print("\033[32mProceeding to Anchored state\033[0m")

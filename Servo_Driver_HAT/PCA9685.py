@@ -73,9 +73,33 @@ class PCA9685:
     self.write(self.__LED0_OFF_H+4*channel, off >> 8)
     if (self.debug):
       print("[*]servo: channel: %d  LED_ON: %d LED_OFF: %d" % (channel,on,off))
-	  
+    
   def setServoPulse(self, channel, pulse):
     "Sets the Servo Pulse,The PWM frequency must be 50HZ"
-    pulse = pulse*4096/20000        #PWM frequency is 50HZ,the period is 20000us
+    pulse = pulse*4096/20000        # Pulse width in micro-seconds (us)
+                                    # PWM frequency is 50HZ,the period is 20000us or 0.02 seconds
+                                    # Assuming range of output is 0-4096 (12-bit)
+    print("Set PWM Pulse   : " + str(pulse))
+    if int(pulse) != 0:
+      print("Rounded Pulse   : " + str(int(pulse)))
+    
     self.setPWM(channel, 0, int(pulse))
+
+    # Table below shows pulse length and percent power for reference
+    """
+    PULSE HIGH TIME             PERCENT POWER           DIRECTION
+
+    1000 us                     100%                    Clockwise
+    1100 us                     80%                     Clockwise
+    1200 us                     60%                     Clockwise
+    1300 us                     40%                     Clockwise
+    1400 us                     20%                     Clockwise
+    1500 us                     0%                      Stopped
+    1600 us                     20%                     Anticlockwise
+    1700 us                     40%                     Anticlockwise
+    1800 us                     60%                     Anticlockwise
+    1900 us                     80%                     Anticlockwise
+    2000 us                     100%                    Anticlockwise
+
+    """
 

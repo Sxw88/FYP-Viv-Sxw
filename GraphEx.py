@@ -44,6 +44,40 @@ def makeKey(node1, node2):
     return key_edge
 
 
+def getDistance(P1_MAC, P2_MAC):
+    """Gets the distance from GRAPH.json"""
+    with open("GRAPH.json", "r") as f:
+        G_LIST = json.load(f)
+
+    rdist = int(float(getJSONData(G_LIST, makeKey(P1_MAC, P2_MAC), "weight"))*100)
+    print("The estimated distance to the reference node is: \033[1;33m" + str(rdist) + " centimeters\033[0m")
+
+    return rdist
+
+
+def getAngletoRefNode(d1, d2, dm):
+    """
+    Returns angle theta given d1, d2, and dm such that
+        d1 is the initial distance between current node and reference node
+        d2 is the updated distance betweem current node and reference node
+        dm is the distance moved by the current node 
+
+    This function is used to calculate the angle for the robot to turn towards the reference node
+    """
+    var_x = (d2*d2 + dm*dm - d1*d1) / (2 * d2 * dm)
+    print("d1 : " + str(d1))
+    print("d2 : " + str(d2))
+    print("dm : " + str(dm))
+    
+    try:
+        theta = int(math.degrees(math.acos(int(var_x))))
+        theta = 180 - theta 
+        return theta
+    except:
+        print("Math error: try again.")
+        return -1
+
+
 def factorial(num):  
     f = 1    
     if num < 0:    
@@ -63,7 +97,7 @@ def rssi_to_distance(rssi):
     d = 0
     
     # Measured variables, can be tweaked
-    P0 = -44
+    P0 = -59
     d0 = 1
     n = 2.5
     L = 6
