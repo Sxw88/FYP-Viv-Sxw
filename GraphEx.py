@@ -152,8 +152,32 @@ def scanRSSI(timeout, fast_mode=False):
     # Write JSON data to file
     with open('GRAPH.json', 'w') as output_file:
         json.dump(NEW_LIST, output_file, indent=2)
+
         
-    
+def estDist(rep, timeout):
+    """estimate distance to neighbouring nodes by scanning RSSI repeatedly and getting the average value"""
+
+    for i in range(0, rep):
+        # read distance (weight) from GRAPH.json
+        GLIST1 = []
+        with open("GRAPH.json", 'r') as read_file:
+            GLIST1 = json.load(read_file)
+        
+        scanRSSI(timeout, fast_mode=True)
+        
+        # read distance (weight) from GRAPH.json again
+        GLIST2 = []
+        with open("GRAPH.json", 'r') as read_file:
+            GLIST2 = json.load(read_file)
+
+        for device in GLIST1:
+            GLIST1[device]["weight"] = round((GLIST1[device]["weight"]*i + GLIST2[device]["weight"]) / (i+1), 2)
+
+        # Write JSON data to file
+        with open('GRAPH.json', 'w') as output_file:
+            json.dump(GLIST1, output_file, indent=2)        
+
+
 
 if __name__ == "__main__":
 

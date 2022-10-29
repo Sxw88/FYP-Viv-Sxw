@@ -252,7 +252,6 @@ class Initialisation(State):
 
 
 class InitAnchoring(State):
-
     def __init__(self):
         """Code for the Initialisation-Anchoring state goes here """
         
@@ -266,15 +265,17 @@ class InitAnchoring(State):
         elif next_step == "i2a":
             # Need to check the distance between this robot and first anchored robot
             
-            mdist  = 50 # Initialize moving distance to 20 (centimeters)
+            mdist  = 50 # Initialize moving distance to 50 (centimeters)
             rdist1 = 0  # Read the distance to the anchor node (stored in GRAPH.json)
             rdist2 = 0
-            
+
+            estDist(7, 5) # scan 7 times for 5 seconds
             rdist1 = getDistance(LOCAL_BLE_MAC, REF1)
             
             # Move a fixed distance and then determine new distance to the reference node
             srv.moveStraight(mdist)
-            scanRSSI(10, fast_mode=True)
+            #scanRSSI(10, fast_mode=True)
+            estDist(7, 5) # scan 7 times for 5 seconds
             rdist2 = getDistance(LOCAL_BLE_MAC, REF1)
             
             # Attempt clockwise rotation first
@@ -283,15 +284,16 @@ class InitAnchoring(State):
                 rot = getAngletoRefNode(rdist1, rdist2, mdist)
 
                 if rot == -1:
-                    scanRSSI(10, fast_mode=True)
+                    #scanRSSI(10, fast_mode=True)
+                    estDist(7, 5) # scan 7 times for 5 seconds
                     rdist1 = getDistance(LOCAL_BLE_MAC, REF1)
 
                     # Move a fixed distance and then 
                     # determine new distance to the reference node
                     srv.moveStraight(mdist)
-                    scanRSSI(10, fast_mode=True)
+                    #scanRSSI(10, fast_mode=True)
+                    estDist(7, 5) # scan 7 times for 5 seconds
                     rdist2 = getDistance(LOCAL_BLE_MAC, REF1)
-
 
             srv.rotateSelf(rot, clockwise=True)
 
@@ -303,7 +305,8 @@ class InitAnchoring(State):
                 srv.moveStraight(mdist)
 
             # Scan and Check the new distance
-            scanRSSI(10, fast_mode=True)
+            #scanRSSI(10, fast_mode=True)
+            estDist(7, 5) # scan 7 times for 5 seconds
             rdist1 =  getDistance(LOCAL_BLE_MAC, REF1)
             
             if rdist1 < adist + 5 and rdist1 > adist -5:
@@ -332,10 +335,12 @@ class InitAnchoring(State):
                     srv.moveStraight(mdist)
 
                 # Scan and Check the new distance
-                scanRSSI(10, fast_mode=True)
+                #scanRSSI(10, fast_mode=True)
+                estDist(7, 5) # scan 7 times for 5 seconds
                 rdist1 =  getDistance(LOCAL_BLE_MAC, REF1)
                 
             next_step = "anc"
+
 
     # Proceeds to Anchored state 
     def startAnchored(self) -> None:
