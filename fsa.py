@@ -11,6 +11,7 @@ from GraphEx import (
         scanRSSI, 
         makeKey, 
         getDistance, 
+        estDist,
         getAngletoRefNode, 
         LOCAL_BLE_MAC
         )
@@ -272,30 +273,36 @@ class InitAnchoring(State):
             estDist(7, 5) # scan 7 times for 5 seconds
             rdist1 = getDistance(LOCAL_BLE_MAC, REF1)
             
-            # Move a fixed distance and then determine new distance to the reference node
+            # Move a fixed distance (mdist)
             srv.moveStraight(mdist)
-            #scanRSSI(10, fast_mode=True)
-            estDist(7, 5) # scan 7 times for 5 seconds
-            rdist2 = getDistance(LOCAL_BLE_MAC, REF1)
             
+            # And then determine new distance to the reference node (rdist2)
+            rdist2 = rdist1 + mdist + 10        # rdist2 should always be smaller
+            while rdist2 > (rdist1 + mdist) or rdist2 < (rdist1 - mdist):    # than the sum of rdist and mdist
+                estDist(7, 5) # scan 7 times for 5 seconds
+                rdist2 = getDistance(LOCAL_BLE_MAC, REF1) 
+
             # Attempt clockwise rotation first
             rot = -1
             while rot == -1:
                 rot = getAngletoRefNode(rdist1, rdist2, mdist)
 
-                if rot == -1:
+                if rot == -1:  # repeat scanning and moving process again
+                    print("\033[1;31m[*] Math Error: \033[0m Will proceed to scan again")
                     #scanRSSI(10, fast_mode=True)
                     estDist(7, 5) # scan 7 times for 5 seconds
                     rdist1 = getDistance(LOCAL_BLE_MAC, REF1)
 
-                    # Move a fixed distance and then 
-                    # determine new distance to the reference node
+                    # Move a fixed distance (mdist)
                     srv.moveStraight(mdist)
-                    #scanRSSI(10, fast_mode=True)
-                    estDist(7, 5) # scan 7 times for 5 seconds
-                    rdist2 = getDistance(LOCAL_BLE_MAC, REF1)
+                    
+                    # And then determine new distance to the reference node (rdist2)
+                    rdist2 = rdist1 + mdist + 10        # rdist2 should always be smaller
+                    while rdist2 > (rdist1 + mdist) or rdist2 < (rdist1 - mdist):    # than the sum of rdist and mdist
+                        estDist(7, 5) # scan 7 times for 5 seconds
+                        rdist2 = getDistance(LOCAL_BLE_MAC, REF1)
 
-            srv.rotateSelf(rot, clockwise=True)
+            srv.rotateSelf90(rot, clockwise=True)
 
             # Move forward/backwards x meters to move to desired distance
             mdist = rdist2 - adist
@@ -305,11 +312,10 @@ class InitAnchoring(State):
                 srv.moveStraight(mdist)
 
             # Scan and Check the new distance
-            #scanRSSI(10, fast_mode=True)
             estDist(7, 5) # scan 7 times for 5 seconds
             rdist1 =  getDistance(LOCAL_BLE_MAC, REF1)
             
-            if rdist1 < adist + 5 and rdist1 > adist -5:
+            if rdist1 < adist + 10 and rdist1 > adist -10:
                 # if distance is acceptable within margin error 10 cm
                 print("Estimated distance to reference node: " + str(rdist1) + " centimeters. ")
                 print("\033[32mProceeding to Anchored state\033[0m")
@@ -325,7 +331,7 @@ class InitAnchoring(State):
 
                 # Attempt rotation in anticlockwise direction
                 rot = rot*2
-                srv.rotateSelf(rot, clockwise=False)
+                srv.rotateSelf90(rot, clockwise=False)
 
                 # Move forward/backwards x meters to move to desired distance
                 mdist = rdist2 - adist

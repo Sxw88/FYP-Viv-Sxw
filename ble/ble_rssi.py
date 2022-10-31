@@ -178,16 +178,7 @@ adapter = bus.get('org.bluez', '/org/bluez/hci0')
 adapter.DuplicateData = False
 
 
-def runscan(discovery_time, rssi_threshold, fast_mode=False, show_all=False):
-    
-    global RSSI_THRESHOLD
-    RSSI_THRESHOLD = rssi_threshold
-
-    global SCAN_FAST_MODE
-    SCAN_FAST_MODE = fast_mode
-
-    global SCAN_SHOW_ALL
-    SCAN_SHOW_ALL = show_all
+def startScan():
     
     # Iterate around already known devices and add to monitor
     print('Adding already known device to monitor...')
@@ -196,6 +187,18 @@ def runscan(discovery_time, rssi_threshold, fast_mode=False, show_all=False):
         device = mng_objs[path].get('org.bluez.Device1', {}).get('Address', [])
         if device:
             DeviceMonitor(path)
+
+
+def runscan(discovery_time, rssi_threshold, fast_mode=False, show_all=False):
+
+    global RSSI_THRESHOLD
+    RSSI_THRESHOLD = rssi_threshold
+
+    global SCAN_FAST_MODE
+    SCAN_FAST_MODE = fast_mode
+
+    global SCAN_SHOW_ALL
+    SCAN_SHOW_ALL = show_all
 
     # Run discovery for discovery_time
     adapter.StartDiscovery()
@@ -207,7 +210,11 @@ def runscan(discovery_time, rssi_threshold, fast_mode=False, show_all=False):
     except KeyboardInterrupt:
         end_discovery()
 
+startScan()
+
 if __name__ == "__main__":
+    runscan(5, -90, fast_mode=True)
+    runscan(5, -90, fast_mode=True)
     runscan(5, -90, fast_mode=True)
 
 

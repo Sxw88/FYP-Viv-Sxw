@@ -8,7 +8,7 @@ import pydbus
 from gi.repository import GLib
 
 discovery_time = 60
-log_file = Path('logs/scan.log')
+log_file = Path('../logs/scan.log')
 
 
 def write_to_log(address, rssi):

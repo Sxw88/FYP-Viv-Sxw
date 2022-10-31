@@ -97,7 +97,7 @@ def rssi_to_distance(rssi):
     d = 0
     
     # Measured variables, can be tweaked
-    P0 = -59
+    P0 = -58
     d0 = 1
     n = 2.5
     L = 6
@@ -112,6 +112,7 @@ def rssi_to_distance(rssi):
     d = round(d, 2)
     
     return d
+ 
 
 def scanRSSI(timeout, fast_mode=False):
     """Scan RSSI of nearby BLE devices, and save info in JSON"""
@@ -160,6 +161,7 @@ def estDist(rep, timeout):
     for i in range(0, rep):
         # read distance (weight) from GRAPH.json
         GLIST1 = []
+
         with open("GRAPH.json", 'r') as read_file:
             GLIST1 = json.load(read_file)
         
@@ -168,10 +170,12 @@ def estDist(rep, timeout):
         # read distance (weight) from GRAPH.json again
         GLIST2 = []
         with open("GRAPH.json", 'r') as read_file:
-            GLIST2 = json.load(read_file)
+            GLIST2 = json.load(read_file) 
 
         for device in GLIST1:
+            print("Old Value: " + str(GLIST1[device]["weight"]))
             GLIST1[device]["weight"] = round((GLIST1[device]["weight"]*i + GLIST2[device]["weight"]) / (i+1), 2)
+            print("New Value: " + str(GLIST1[device]["weight"]))
 
         # Write JSON data to file
         with open('GRAPH.json', 'w') as output_file:
@@ -187,7 +191,6 @@ if __name__ == "__main__":
     print(makeKey(MAC1, MAC2))
     print(makeKey(MAC2, MAC1))
     
-    scanRSSI(10, fast_mode=True)
 
     # Read MAC from device info.add
     with open("info.add") as f:
@@ -207,5 +210,7 @@ if __name__ == "__main__":
     print(makeKey(MAC1, MAC2))
     print(getJSONData(G_LIST, makeKey(MAC1,MAC2), "weight"))
 
-
+    print("\n\n\n\n\n\n\n")
+    estDist(5,7)
     
+   
