@@ -13,10 +13,12 @@ import json
 from ble_cen import readCharacteristic
 
 log_file        = Path('/home/pi/FYP-Viv-Sxw/ble/logs/scan.log')
-RSSI_THRESHOLD  = -90 # Not actually used
+RSSI_THRESHOLD  = -90       # Not actually used
 SERVICE_UUID    = "12345678-9abc-def0-1234-56789abcdef0"
 SCAN_FAST_MODE  = False
 SCAN_SHOW_ALL   = False
+VERBOSE_MODE    = True
+SCANNED_HOSTS   = []        # List of hosts which appeared in a scan
 
 def write_to_log(address, rssi):
     """Write device and rssi values to a log file"""
@@ -103,6 +105,7 @@ class DeviceMonitor:
         
         global JSON_LIST
         global SCAN_SHOW_ALL
+        global SCANNED_HOSTS
 
         self.device_id = len(JSON_LIST)
 
@@ -119,13 +122,19 @@ class DeviceMonitor:
             if rssi is not None and int(rssi) > RSSI_THRESHOLD:
                 if self.device.Address in JSON_LIST:
                     self.device_name = '\033[1;33m' + JSON_LIST[self.device.Address]["Name"] + '\033[0m'
-                    print(f"MAC Address Already Exists. {self.device_name} ({self.ori_name}) added to monitor {self.device.Address} @ {rssi} dBm")
+                    if VERBOSE_MODE:
+                        print(f"MAC Address Already Exists. {self.device_name} ({self.ori_name}) added to monitor {self.device.Address} @ {rssi} dBm")
+                    if self.device.Address not in SCANNED_HOSTS:
+                        SCANNED_HOSTS.append(self.device.Address)
                 else:
                     self.device_name = '\033[1;33m' + "BLE-Device-" + str(self.device_id)  + '\033[0m'
-                    print(f'\033[1;32mNEW: \033[0m{self.device_name} ({self.ori_name}) added to monitor {self.device.Address} @ {rssi} dBm')
+                    if VERBOSE_MODE:
+                        print(f'\033[1;32mNEW: \033[0m{self.device_name} ({self.ori_name}) added to monitor {self.device.Address} @ {rssi} dBm')
                     if "Pi-BLE" in self.ori_name:
-                        print("\tDevice saved.")
-                        #JSON_LIST = saveInfo_RSSI(JSON_LIST, self.device.Address, self.device_name[7:-4], rssi)
+                        if VERBOSE_MODE:
+                            print("\t:Device saved.")
+                        if self.device.Address not in SCANNED_HOSTS:
+                            SCANNED_HOSTS.append(self.device.Address)
                         JSON_LIST = saveInfo_RSSI(JSON_LIST, self.device.Address, self.ori_name, rssi)
 
 
@@ -134,6 +143,7 @@ class DeviceMonitor:
         
         global JSON_LIST
         global SCAN_SHOW_ALL
+        global SCANNED_HOSTS
 
         rssi = props_changed.get('RSSI', None)
         
@@ -141,16 +151,22 @@ class DeviceMonitor:
             if rssi is not None and int(rssi) > RSSI_THRESHOLD:
                 if self.device.Address in JSON_LIST:
                     self.device_name = '\033[1;33m' + JSON_LIST[self.device.Address]["Name"] + '\033[0m'
-                    print(f'\t\033[32mDevice Seen: \033[0m {self.device_name} ({self.ori_name}) at address: {self.device.Address} @ {rssi} dBm')
+                    if VERBOSE_MODE:    
+                        print(f'\t\033[32mDevice Seen: \033[0m {self.device_name} ({self.ori_name}) at address: {self.device.Address} @ {rssi} dBm')
                     write_to_log(self.device.Address, rssi)
+                    if self.device.Address not in SCANNED_HOSTS:
+                        SCANNED_HOSTS.append(self.device.Address)
                     JSON_LIST = update_RSSI(JSON_LIST, self.device.Address, "RSSI", rssi)
                 else:
                     self.device_id = len(JSON_LIST)
                     self.device_name = '\033[1;33m' + "BLE-Device-" + str(self.device_id)  + '\033[0m'  
-                    print(f'\033[1;32mNEW Device Seen: \033[0m {self.device_name} ({self.ori_name}) at address: {self.device.Address} @ {rssi} dBm')
+                    if VERBOSE_MODE:
+                        print(f'\033[1;32mNEW Device Seen: \033[0m {self.device_name} ({self.ori_name}) at address: {self.device.Address} @ {rssi} dBm')
                     if "Pi-BLE" in self.ori_name:
-                        print("\tDevice saved.")
-                        #JSON_LIST = saveInfo_RSSI(JSON_LIST, self.device.Address, self.device_name[7:-4], rssi)
+                        if VERBOSE_MODE:
+                            print("\t:Device saved.")
+                        if self.device.Address not in SCANNED_HOSTS:
+                            SCANNED_HOSTS.append(self.device.Address)
                         JSON_LIST = saveInfo_RSSI(JSON_LIST, self.device.Address, self.ori_name, rssi)
 
 
@@ -189,7 +205,7 @@ def startScan():
             DeviceMonitor(path)
 
 
-def runscan(discovery_time, rssi_threshold, fast_mode=False, show_all=False):
+def runscan(discovery_time, rssi_threshold, fast_mode=False, show_all=False, verbose=True):
 
     global RSSI_THRESHOLD
     RSSI_THRESHOLD = rssi_threshold
@@ -200,10 +216,16 @@ def runscan(discovery_time, rssi_threshold, fast_mode=False, show_all=False):
     global SCAN_SHOW_ALL
     SCAN_SHOW_ALL = show_all
 
+    global VERBOSE_MODE
+    VERBOSE_MODE = verbose
+
+    global SCANNED_HOSTS
+    SCANNED_HOSTS = []
+
     # Run discovery for discovery_time
     adapter.StartDiscovery()
     GLib.timeout_add_seconds(discovery_time, end_discovery)
-    print('Finding nearby devices...')
+    print('\nFinding nearby devices...')
 
     try:
         mainloop.run()

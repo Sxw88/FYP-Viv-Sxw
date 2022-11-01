@@ -114,10 +114,10 @@ def rssi_to_distance(rssi):
     return d
  
 
-def scanRSSI(timeout, fast_mode=False):
+def scanRSSI(timeout, fast_mode=False, verbose=True):
     """Scan RSSI of nearby BLE devices, and save info in JSON"""
     
-    blescan.runscan(timeout, -80, fast_mode=fast_mode) 
+    blescan.runscan(timeout, -80, fast_mode=fast_mode, verbose=verbose) 
     # to avoid race condition, sleep for 1 second
     time.sleep(1)
     
@@ -129,9 +129,11 @@ def scanRSSI(timeout, fast_mode=False):
     # format each device in a new JSON list with distance conversion
     NEW_LIST = {}
     for device in RSSI_LIST:
-        print("\n-------------Device-----------------")
-        print(RSSI_LIST[device])
-        print("------------------------------------\n")
+        if verbose:
+            print("\n-------------Device-----------------")
+            print(RSSI_LIST[device])
+            print("------------------------------------\n")
+
         dist = rssi_to_distance(int(RSSI_LIST[device]["RSSI"]))
         
         time_passed = datetime.now() - datetime.strptime(RSSI_LIST[device]["Last-Seen"], "%Y-%m-%d,%H:%M:%S")
@@ -155,62 +157,89 @@ def scanRSSI(timeout, fast_mode=False):
         json.dump(NEW_LIST, output_file, indent=2)
 
         
-def estDist(rep, timeout):
+def estDist(rep, timeout, verbose=False, target_MAC=None):
     """estimate distance to neighbouring nodes by scanning RSSI repeatedly and getting the average value"""
-
-    for i in range(0, rep):
+    
+    print("\033[1;32m[*]\033[0m Scanning " + str(rep) + " times for " + str(timeout) + " seconds each.")
+    
+    i = 0
+    while i < rep:
         # read distance (weight) from GRAPH.json
         GLIST1 = []
+        i = i +1
 
         with open("GRAPH.json", 'r') as read_file:
             GLIST1 = json.load(read_file)
         
-        scanRSSI(timeout, fast_mode=True)
+        scanRSSI(timeout, fast_mode=True, verbose=verbose)
+        print("List of Scanned Hosts: " + str(blescan.SCANNED_HOSTS))
         
-        # read distance (weight) from GRAPH.json again
-        GLIST2 = []
-        with open("GRAPH.json", 'r') as read_file:
-            GLIST2 = json.load(read_file) 
+        if target_MAC != None and target_MAC not in blescan.SCANNED_HOSTS:
+            print("\033[31mTarget did not show up in previous scan... \033[0mScan will be repeated one more time.")
+            i = i - 1
+        else:
+            # read distance (weight) from GRAPH.json again
+            GLIST2 = []
+            with open("GRAPH.json", 'r') as read_file:
+                GLIST2 = json.load(read_file) 
 
-        for device in GLIST1:
-            print("Old Value: " + str(GLIST1[device]["weight"]))
-            GLIST1[device]["weight"] = round((GLIST1[device]["weight"]*i + GLIST2[device]["weight"]) / (i+1), 2)
-            print("New Value: " + str(GLIST1[device]["weight"]))
+            for device_hash in GLIST1:
+                try:
+                    read_dist = GLIST1[device_hash]["weight"]
+                    GLIST1[device_hash]["weight"] = round((read_dist*i + GLIST2[device_hash]["weight"]) / (i+1), 2)
+                    
+                    if target_MAC == None or device_hash == makeKey(target_MAC, LOCAL_BLE_MAC):
+                        
+                        if target_MAC == None:
+                            device = " No device "
+                            if GLIST1[device_hash]["MAC-1"] == LOCAL_BLE_MAC.upper():
+                                device = GLIST1[device_hash]["MAC-2"]
+                            else:
+                                device = GLIST1[device_hash]["MAC-1"]
+                            print("\033[1;36m-- Device: " + device + " --\033[0m")
 
-        # Write JSON data to file
-        with open('GRAPH.json', 'w') as output_file:
-            json.dump(GLIST1, output_file, indent=2)        
+                        else:
+                            print("\033[1;36m-- Device: " + target_MAC + " --\033[0m")
+
+                        print("Read Value     (distance) : " + str(read_dist) + " meters")
+                        print("Updated Value  (distance) : " + str(GLIST1[device_hash]["weight"]) + " meters")
+                except:
+                    print("\033[1;31m[!] Error:\033[0m Distance not recorded for device + " + str(device))
+
+            # Write JSON data to file
+            with open('GRAPH.json', 'w') as output_file:
+                json.dump(GLIST1, output_file, indent=2)        
 
 
 
 if __name__ == "__main__":
 
-    MAC1 = "53-02-16-1C-23-E5"
-    MAC2 = "F5-B9-EB-C9-B9-8C"
+    #MAC1 = "53-02-16-1C-23-E5"
+    #MAC2 = "F5-B9-EB-C9-B9-8C"
     
-    print(makeKey(MAC1, MAC2))
-    print(makeKey(MAC2, MAC1))
+    #print(makeKey(MAC1, MAC2))
+    #print(makeKey(MAC2, MAC1))
     
 
     # Read MAC from device info.add
-    with open("info.add") as f:
-        MAC1 = f.readline()
-        MAC1 = f.readline()
-        MAC1 = f.readline()
-        MAC1 = MAC1[:-1]
+    #with open("info.add") as f:
+    #    MAC1 = f.readline()
+    #    MAC1 = f.readline()
+    #    MAC1 = f.readline()
+    #    MAC1 = MAC1[:-1]
 
-    print(MAC1)
-    MAC2 = "DC:A6:32:D3:4F:11"
+    #print(MAC1)
+    #MAC2 = "DC:A6:32:D3:4F:11"
     
-    G_LIST = []
-    with open("GRAPH.json") as f:
-        G_LIST = json.load(f)
-        print(G_LIST)
+    #G_LIST = []
+    #with open("GRAPH.json") as f:
+    #    G_LIST = json.load(f)
+    #    print(G_LIST)
 
-    print(makeKey(MAC1, MAC2))
-    print(getJSONData(G_LIST, makeKey(MAC1,MAC2), "weight"))
+    #print(makeKey(MAC1, MAC2))
+    #print(getJSONData(G_LIST, makeKey(MAC1,MAC2), "weight"))
 
-    print("\n\n\n\n\n\n\n")
-    estDist(5,7)
+    #print("\n\n\n\n\n\n\n")
+    estDist(10,2, target_MAC="DC:A6:32:D3:4F:11") # scan 3 times for 5 secs
     
    

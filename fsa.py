@@ -270,7 +270,8 @@ class InitAnchoring(State):
             rdist1 = 0  # Read the distance to the anchor node (stored in GRAPH.json)
             rdist2 = 0
 
-            estDist(7, 5) # scan 7 times for 5 seconds
+            # The first scan should take a longer time for better accuracy
+            estDist(15, 5) # scan 15 times for 5 seconds
             rdist1 = getDistance(LOCAL_BLE_MAC, REF1)
             
             # Move a fixed distance (mdist)
