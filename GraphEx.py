@@ -97,9 +97,9 @@ def rssi_to_distance(rssi):
     d = 0
     
     # Measured variables, can be tweaked
-    P0 = -58
+    P0 = -59
     d0 = 1
-    n = 2.5
+    n = 4.0
     L = 6
 
     x = math.log(10, math.e) * ((P0-rssi)/(10*n))
@@ -127,30 +127,34 @@ def scanRSSI(timeout, fast_mode=False, verbose=True):
         RSSI_LIST = json.load(read_file)
 
     # format each device in a new JSON list with distance conversion
-    NEW_LIST = {}
+    NEW_LIST = []
+    with open("GRAPH.json", 'r') as read_file:
+        NEW_LIST = json.load(read_file)
+
     for device in RSSI_LIST:
-        if verbose:
-            print("\n-------------Device-----------------")
-            print(RSSI_LIST[device])
-            print("------------------------------------\n")
-
-        dist = rssi_to_distance(int(RSSI_LIST[device]["RSSI"]))
-        
-        time_passed = datetime.now() - datetime.strptime(RSSI_LIST[device]["Last-Seen"], "%Y-%m-%d,%H:%M:%S")
-        if time_passed.total_seconds() < 3000: 
+        if device in blescan.SCANNED_HOSTS:
+            if verbose:
+                print("\n-------------Device-----------------")
+                print(RSSI_LIST[device])
+                print("------------------------------------\n")
             
-            node1 = LOCAL_BLE_MAC
-            node2 = device
-            if device < LOCAL_BLE_MAC:
-                node1 = device
-                node2 = LOCAL_BLE_MAC
+            dist = rssi_to_distance(int(RSSI_LIST[device]["RSSI"]))
+            
+            time_passed = datetime.now() - datetime.strptime(RSSI_LIST[device]["Last-Seen"], "%Y-%m-%d,%H:%M:%S")
+            if time_passed.total_seconds() < 3000: 
+                
+                node1 = LOCAL_BLE_MAC
+                node2 = device
+                if device < LOCAL_BLE_MAC:
+                    node1 = device
+                    node2 = LOCAL_BLE_MAC
 
-            NEW_LIST[makeKey(LOCAL_BLE_MAC, device)] = { 
-                    "MAC-1": node1,
-                    "MAC-2": node2,
-                    "weight": dist, 
-                    "timestamp": RSSI_LIST[device]["Last-Seen"]
-                    }
+                NEW_LIST[makeKey(LOCAL_BLE_MAC, device)] = { 
+                        "MAC-1": node1,
+                        "MAC-2": node2,
+                        "weight": dist, 
+                        "timestamp": RSSI_LIST[device]["Last-Seen"]
+                        }
 
     # Write JSON data to file
     with open('GRAPH.json', 'w') as output_file:
@@ -167,18 +171,19 @@ def estDist(rep, timeout, verbose=False, target_MAC=None):
         # read distance (weight) from GRAPH.json
         GLIST1 = []
         i = i +1
-
+        
         with open("GRAPH.json", 'r') as read_file:
             GLIST1 = json.load(read_file)
         
-        scanRSSI(timeout, fast_mode=True, verbose=verbose)
-        print("List of Scanned Hosts: " + str(blescan.SCANNED_HOSTS))
+        scanRSSI(timeout, fast_mode=True, verbose=False)
+        print("Round " + str(i) + " - List of Scanned Hosts: " + str(blescan.SCANNED_HOSTS))
         
         if target_MAC != None and target_MAC not in blescan.SCANNED_HOSTS:
             print("\033[31mTarget did not show up in previous scan... \033[0mScan will be repeated one more time.")
             i = i - 1
+            time.sleep(1)
         else:
-            # read distance (weight) from GRAPH.json again
+            # read distance (weight) from GRAPH.json again after scanning
             GLIST2 = []
             with open("GRAPH.json", 'r') as read_file:
                 GLIST2 = json.load(read_file) 
@@ -186,8 +191,7 @@ def estDist(rep, timeout, verbose=False, target_MAC=None):
             for device_hash in GLIST1:
                 try:
                     read_dist = GLIST1[device_hash]["weight"]
-                    GLIST1[device_hash]["weight"] = round((read_dist*i + GLIST2[device_hash]["weight"]) / (i+1), 2)
-                    
+                    GLIST1[device_hash]["weight"] = round((read_dist*(i-1) + GLIST2[device_hash]["weight"]) / (i), 2)
                     if target_MAC == None or device_hash == makeKey(target_MAC, LOCAL_BLE_MAC):
                         
                         if target_MAC == None:
@@ -201,15 +205,18 @@ def estDist(rep, timeout, verbose=False, target_MAC=None):
                         else:
                             print("\033[1;36m-- Device: " + target_MAC + " --\033[0m")
 
-                        print("Read Value     (distance) : " + str(read_dist) + " meters")
-                        print("Updated Value  (distance) : " + str(GLIST1[device_hash]["weight"]) + " meters")
+                        #print("Read Value     (distance) : " + str(read_dist) + " meters")
+                        #print("Updated Value  (distance) : " + str(GLIST1[device_hash]["weight"]) + " meters")
+                        print("Read Value\t\tMeasured Value\t\tUpdated Value")
+                        print( str(read_dist) + "\t\t\t" + str(GLIST2[device_hash]["weight"]) + "\t\t\t" + str(GLIST1[device_hash]["weight"]) )
                 except:
                     print("\033[1;31m[!] Error:\033[0m Distance not recorded for device + " + str(device))
 
             # Write JSON data to file
             with open('GRAPH.json', 'w') as output_file:
-                json.dump(GLIST1, output_file, indent=2)        
-
+                json.dump(GLIST1, output_file, indent=2)    
+                print("saved updated value to GRAPH.json file")
+                
 
 
 if __name__ == "__main__":

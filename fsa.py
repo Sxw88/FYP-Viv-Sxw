@@ -271,7 +271,7 @@ class InitAnchoring(State):
             rdist2 = 0
 
             # The first scan should take a longer time for better accuracy
-            estDist(15, 5) # scan 15 times for 5 seconds
+            estDist(15, 3, target_MAC=REF1.upper()) # scan 15 times for 3 seconds
             rdist1 = getDistance(LOCAL_BLE_MAC, REF1)
             
             # Move a fixed distance (mdist)
@@ -280,7 +280,7 @@ class InitAnchoring(State):
             # And then determine new distance to the reference node (rdist2)
             rdist2 = rdist1 + mdist + 10        # rdist2 should always be smaller
             while rdist2 > (rdist1 + mdist) or rdist2 < (rdist1 - mdist):    # than the sum of rdist and mdist
-                estDist(7, 5) # scan 7 times for 5 seconds
+                estDist(7, 3, target_MAC=REF1.upper()) # scan 7 times for 3 seconds
                 rdist2 = getDistance(LOCAL_BLE_MAC, REF1) 
 
             # Attempt clockwise rotation first
@@ -291,7 +291,7 @@ class InitAnchoring(State):
                 if rot == -1:  # repeat scanning and moving process again
                     print("\033[1;31m[*] Math Error: \033[0m Will proceed to scan again")
                     #scanRSSI(10, fast_mode=True)
-                    estDist(7, 5) # scan 7 times for 5 seconds
+                    estDist(7, 3, target_MAC=REF1.upper()) # scan 7 times for 3 seconds
                     rdist1 = getDistance(LOCAL_BLE_MAC, REF1)
 
                     # Move a fixed distance (mdist)
@@ -300,7 +300,7 @@ class InitAnchoring(State):
                     # And then determine new distance to the reference node (rdist2)
                     rdist2 = rdist1 + mdist + 10        # rdist2 should always be smaller
                     while rdist2 > (rdist1 + mdist) or rdist2 < (rdist1 - mdist):    # than the sum of rdist and mdist
-                        estDist(7, 5) # scan 7 times for 5 seconds
+                        estDist(7, 3, target_MAC=REF1.upper()) # scan 7 times for 3 seconds
                         rdist2 = getDistance(LOCAL_BLE_MAC, REF1)
 
             srv.rotateSelf90(rot, clockwise=True)
@@ -313,7 +313,7 @@ class InitAnchoring(State):
                 srv.moveStraight(mdist)
 
             # Scan and Check the new distance
-            estDist(7, 5) # scan 7 times for 5 seconds
+            estDist(7, 3, target_MAC=REF1.upper()) # scan 7 times for 3 seconds
             rdist1 =  getDistance(LOCAL_BLE_MAC, REF1)
             
             if rdist1 < adist + 10 and rdist1 > adist -10:
@@ -342,8 +342,7 @@ class InitAnchoring(State):
                     srv.moveStraight(mdist)
 
                 # Scan and Check the new distance
-                #scanRSSI(10, fast_mode=True)
-                estDist(7, 5) # scan 7 times for 5 seconds
+                estDist(7, 3, target_MAC=REF1.upper()) # scan 7 times for 3 seconds
                 rdist1 =  getDistance(LOCAL_BLE_MAC, REF1)
                 
             next_step = "anc"
