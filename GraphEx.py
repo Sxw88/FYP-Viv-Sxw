@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 
-# class to facilitate exchange of the collected RSSI information
-# which is represented by a graph and stored in JSON format.
-#
-# CRC32 hash function is used to shorten the unique key 
-# formed by the combination of MAC addresses of nodes.
+# the module contains various classes / functions
+# which are used in the analysis / exchange of the collected RSSI information
+# The collected info is read from JSON format, processed and then stored in JSON format
+
 
 from datetime import datetime
 import time
@@ -27,6 +26,8 @@ with open('info.add', 'r') as f:
 
 
 def makeKey(node1, node2):
+    # CRC32 hash function is used to shorten the unique key 
+    # formed by the combination of MAC addresses of nodes.
 
     # key is the representation of two nodes forming the edge
     key_MAC = ""
@@ -70,9 +71,9 @@ def getAngletoRefNode(d1, d2, dm):
     print("dm : " + str(dm))
     
     try:
-        theta = int(math.degrees(math.acos(int(var_x))))
+        theta = math.degrees(math.acos(var_x))
         theta = 180 - theta 
-        return theta
+        return int(theta)
     except:
         print("Math error: try again.")
         return -1
