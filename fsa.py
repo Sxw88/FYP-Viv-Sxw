@@ -5,12 +5,14 @@ from __future__ import annotations
 import time
 import json
 import sys
+import random
 
 from abc import ABC, abstractmethod
 from GraphEx import (
         scanRSSI, 
         makeKey, 
         getDistance, 
+        rssi_to_distance,
         estDist,
         getAngletoRefNode, 
         LOCAL_BLE_MAC
@@ -25,6 +27,7 @@ adist       = 50        # How many centimeters apart between the swarm robots at
 srv         = None      # Servo Driver Object
 REF1        = None      # Reference Node 1
 REF2        = None      # Reference Node 2
+unique_ID   = "20"
 
 # The Finite State Automata (FSA) class is the context. It should be initiated with a default state.
 class FSA:
@@ -115,119 +118,69 @@ class Initialisation(State):
         srv = ServoDriver()
         srv.testCode() # rotate 360 degrees
         
+        global unique_ID
+        # getting the unique ID from info.add file
+        with open("info.add") as f_read:
+            line_to_read = f_read.readline()
+            line_to_read = f_read.readline()
+            unique_ID = line_to_read[10:-1]
+        
         while next_step == "ini":
-            """
-                Initialisation loop, will only break under 2 conditions:
+            """ Initialisation loop, will only break under 2 conditions:
                     1) Robot selected for Init-Anchoring process
-                    2) More than 2 anchors, proceed to Localize-Triangulate
+                    2) More than 2 anchors, proceed to Localize & Triangulate
             """
-
+            ini_list = [] # list of robots currently in the initialisation process 
+            anc_count = 0 # total number of peers in init-anchoring / anchored states   
+            
             # Scan and check for peers which are online
             print("\nScanning for peers (20 seconds):")
             scanRSSI(20)
             
             # Check for any anchored peers from RSSI.json file
             with open("./ble/RSSI.json", "r") as f_rssi:
-                RSSI_LIST = json.load(f_rssi)
-                ANC_LIST = {}
-                IA_LIST = {}
+                
+                print("Checking for peers in Init-Anchoring / Anchored states:")
+                rssi_list = json.load(f_rssi)
+                
 
-                print("Checking for peers in anchored state:")
-
-                for device in RSSI_LIST:
-                    device_state = getJSONData(RSSI_LIST, device, "State")
+                for device in rssi_list:
+                    device_state = getJSONData(rssi_list, device, "State")
                     #print("Device MAC: " + str(device) + "\nDevice State: " + str(device_state) + "\n")
 
-                    if device_state == "anc":
+                    if device_state == "anc" or device_state == "i-a" or device_state == "i2a":
                         # Copy the anchored device JSON object to a new list
-                        ANC_LIST[device] = {    
-                                "Name": getJSONData(RSSI_LIST, device, "Name"),
-                                "RSSI": getJSONData(RSSI_LIST, device, "RSSI"),
-                                "Last-Seen": getJSONData(RSSI_LIST, device, "Last-Seen")
-                                }
+                        anc_count = anc_count +1
+                        if device_state == "anc":
+                            REF1 = device                   # to be used as reference node in i2a state   
+                    elif device_state == "ini":
+                        # add unique ID to the list
+                        device_uID = getJSONData(rssi_list, device, "Name")
+                        ini_list.append(device_uID[7:])
                         
-                        IA_LIST[device] = {    
-                                "Name": getJSONData(RSSI_LIST, device, "Name"),
-                                "RSSI": getJSONData(RSSI_LIST, device, "RSSI"),
-                                "Last-Seen": getJSONData(RSSI_LIST, device, "Last-Seen")
-                                }
-                    if device_state == "i-a" or device_state == "i2a":
-                        IA_LIST[device] = {    
-                                "Name": getJSONData(RSSI_LIST, device, "Name"),
-                                "RSSI": getJSONData(RSSI_LIST, device, "RSSI"),
-                                "Last-Seen": getJSONData(RSSI_LIST, device, "Last-Seen")
-                                }
+            print("Number of Anchored/Anchoring devices detected: " + str(anc_count))
+            
+            if anc_count >= 2:      # End Initialisation state and enter Localization state
+                next_step = "lcl"
+            elif anc_count == 1:    # Else, Proceed with Init-Anchoring process
+                next_step = "i2a"       
+            elif anc_count == 0:
+                next_step = "i-a"
+                
+            # If it does not have the smallest ID,
+            # the robot will stay in the initialisation loop
+            for device_uID in ini_list:
+                print("Comparing ID: Pi-BLE-" + unique_ID + " with ID: Pi-BLE-" + device_uID, end=" ... ")
 
-
-                print("\nList of Anchored/Anchoring devices")
-                print(IA_LIST)
-                print(" ")
-
-                if (len(ANC_LIST) >= 2):
-                    
-                    # End Initialisation state and enter Localization state
-                    next_step = "lcl"
-
-                elif (len(IA_LIST) < 2):  # No peers who are in an anchoring state
-
-                    # Enter Initialization-Anchoring state if peers > 0
-                    if (len(RSSI_LIST) >= 1): 
-                        next_step = "i-a"
-
-                        # Check if this robot has the lowest / second lowest ID (BLE name or static IP address name)
-                        
-                        # obain the unique ID (which every robot has)
-                        unique_ID = "20"
-                        with open("info.add") as f_read:
-                            line_to_read = f_read.readline()
-                            line_to_read = f_read.readline()
-                            unique_ID = line_to_read[10:-1]
-                        
-                        # Get the unique IDs of peer robots from RSSI_LIST
-                        smaller_count = 0
-
-                        for device in RSSI_LIST:
-                            device_uID = getJSONData(RSSI_LIST, device, "Name")
-                            print("Device: " + device_uID)
-                            device_uID = device_uID[7:]
-
-                            # Comparison of unique IDs, 
-                            # If there are 2 devices which are smaller than the local unique ID,
-                            # stay in the initialisation loop
-
-                            print("Comparing ID: Pi-BLE-" + device_uID + " with ID: Pi-BLE-" + unique_ID)
-
-                            if (int(device_uID) < int(unique_ID)):
-                                print(device_uID + " is smaller, smaller_count variable +1")
-                                smaller_count += 1
-
-                                global REF1
-                                REF1 = device
-
-                            else:
-                                print(unique_ID + " is smaller")
-
-                        print(" ")
-
-                        if smaller_count >= 2:
-                            next_step = "ini"
-                            time.sleep(5)
-                        elif smaller_count == 1:
-                            next_step = "i2a" # Second robot to anchor
-
-                    else:
-                        # Stay in Initialisation loop
-                        next_step = "ini"
-                        print("\033[1;33m[*]\033[0m No peers are online. Script will sleep for 5 seconds and try again.")
-                        time.sleep(5)
-                else:
-                    # Stay in Initialisation loop
+                if (int(device_uID) < int(unique_ID)):
+                    print(device_uID + " is smaller. ")
                     next_step = "ini"
-                    print("\033[1;33m[*]\033[0m Detected peers currently in Init-Anchoring state. Script will sleep for 5 seconds and try again.")
+                    print("The script will sleep for 5 seconds and try again.")
                     time.sleep(5)
-
-
-    
+                    break
+                else:
+                    print(unique_ID + " is smaller")
+           
     # The robot starts to anchor itself if no other reference points can be found
     def startInitAnchoring(self) -> None:
         print("\033[1;33m[*]\033[0m Switching to the Initialisation-Anchoring state...")
@@ -370,12 +323,96 @@ class InitAnchoring(State):
 
 
 class Localization(State):
-
+    """ This state is similar to initialisation, robots will loop in this step while waiting for
+        for other robots to complete the TTE/ Triangulation state
+    """ #Pseudocode : loop (check for peers in TTE/Tri states - wait some time) - wait for your turn - decide TTE/Tri state 
+    
     def __init__(self):
         print("\033[1;32m[*]\033[0m Currently in the Localization state")
         # main code for Localization goes here
+        
         global next_step
-        next_step = "tte"
+        global unique_ID
+        
+        while next_step == "lcl":
+            
+            # Scan for peers currently in TTE/ Triangulation state
+            print("\nScanning for peers (20 seconds):")
+            scanRSSI(20)
+            tri_count = 0
+            anc_count = 0           # This is used later to determine whether or not to proceed with Triangulation (SPECIAL CASE)
+            lcl_list = []           # list of robots currently in the localisation process 
+            anc_list = []           # list containing RSSI information to anchored robots
+            
+            print("\033[1;32mScanning Complete.\033[0m Now checking for peers in TTE / Triangulation state:")
+            # Check for peers in TTE / Triangulation state from RSSI.json file
+            with open("./ble/RSSI.json", "r") as f_rssi:
+                rssi_list = json.load(f_rssi)
+                
+                for device in rssi_list:
+                    device_state = getJSONData(rssi_list, device, "State")
+                    #print("Device MAC: " + str(device) + "\nDevice State: " + str(device_state) + "\n")
+
+                    if device_state == "tte" or device_state == "tri":
+                        tri_count = tri_count + 1       # increment tri_count variable
+                        print("\tNew device in TTE/Tri state detected, MAC address: " + device)
+                    elif device_state == "lcl":
+                        # add unique ID to the list
+                        device_uID = getJSONData(rssi_list, device, "Name")
+                        lcl_list.append(device_uID[7:])
+                    elif device_state == "anc":
+                        anc_count = anc_count + 1       # increment tri_count variable
+                    
+            if tri_count == 0:
+                
+                # decide whether to proceed with TTE or Triangulation
+                                        # if > 2 nodes anchored
+                if anc_count > 2:       # estimate distance - get distance to nearest 3 nodes
+                    estDist(10, 3)      # if any one node > int(adist*1.2) cm, goto "tri"                
+                                        # else goto "tte"
+                    with open("./ble/RSSI.json", "r") as f_rssi:
+                        rssi_list = json.load(f_rssi)
+                        
+                        for device in rssi_list:
+                            device_state = getJSONData(rssi_list, device, "State")
+                            
+                            if device_state == "anc":
+                                anc_list.append([device, getJSONData(rssi_list, device, "RSSI")])
+                    
+                    anc_list = sorted(anc_list)     # sort the list, 
+                    try:
+                        anc_list = anc_list[:3]         # then take the first 3 elements (nearest 3 nodes
+                    except:
+                        print("\033[1;31mError: \033[0mItems not found in ANC_LIST")
+                    
+                    next_step = "tte"                       # go to tte state unless if any one node > adist cm + 20%, then goto "tri"
+                    for rssi in anc_list:                                              
+                        if int(rssi_to_distance(rssi) * 100) > int(adist*1.2):
+                            next_step = "tri"
+                            break
+                
+                elif anc_count == 2:    # SPECIAL CASE to proceed with Triangulation if exactly 2 anchors are found
+                    next_step = "tri"
+                    
+                # another check to compare unique ID among localising peers
+                # If it does not have the smallest ID,
+                # the robot will stay in the initialisation loop
+                for device_uID in lcl_list:
+                    print("Comparing ID: Pi-BLE-" + unique_ID + " with ID: Pi-BLE-" + device_uID, end=" ... ")
+
+                    if (int(device_uID) < int(unique_ID)):
+                        print(device_uID + " is smaller. ")
+                        next_step = "lcl"
+                        break
+                    else:
+                        print(unique_ID + " is smaller")
+                    
+            if next_step == "lcl":
+                rand_sleep = random.randint(8, 18)
+                print("Detected " + str(tri_count) " peers currently in TTE / Triangulation state. ")
+                print("Detected " + str(anc_count) " peers currently Anchored. ")
+                print("\033[1;33m[*]\033[0m Script will sleep for" + rand_sleep + "seconds and try again.")
+                time.sleep(rand_sleep)
     
     # Travel-to-Edge if needed
     def startTTE(self) -> None:
