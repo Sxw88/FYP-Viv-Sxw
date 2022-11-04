@@ -38,6 +38,10 @@ sudo hcitool -i hci0 cmd 0x08 0x0008 1e 02 01 1a 1a ff 4c 00 02 15 e2 c5 6d b5 d
 sudo hcitool -i hci0 cmd 0x08 0x0006 A0 00 A0 00 03 00 00 00 00 00 00 00 00 07 00
 sudo hcitool -i hci0 cmd 0x08 0x000a 01
 
+# Turn on Discoverable Mode
+echo -e "discoverable on\nquit" | bluetoothctl
+
 # Start BLE peripheral server
 ./ble_per.py
+
 

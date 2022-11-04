@@ -124,6 +124,8 @@ class Initialisation(State):
             line_to_read = f_read.readline()
             line_to_read = f_read.readline()
             unique_ID = line_to_read[10:-1]
+
+        global REF1
         
         while next_step == "ini":
             """ Initialisation loop, will only break under 2 conditions:
@@ -152,7 +154,7 @@ class Initialisation(State):
                         # Copy the anchored device JSON object to a new list
                         anc_count = anc_count +1
                         if device_state == "anc":
-                            REF1 = device                   # to be used as reference node in i2a state   
+                            REF1 = device                   # to be used as reference node in i2a state 
                     elif device_state == "ini":
                         # add unique ID to the list
                         device_uID = getJSONData(rssi_list, device, "Name")
@@ -163,7 +165,8 @@ class Initialisation(State):
             if anc_count >= 2:      # End Initialisation state and enter Localization state
                 next_step = "lcl"
             elif anc_count == 1:    # Else, Proceed with Init-Anchoring process
-                next_step = "i2a"       
+                next_step = "i2a"
+                print("\tReference node: " + REF1)
             elif anc_count == 0:
                 next_step = "i-a"
                 
@@ -409,8 +412,8 @@ class Localization(State):
                     
             if next_step == "lcl":
                 rand_sleep = random.randint(8, 18)
-                print("Detected " + str(tri_count) " peers currently in TTE / Triangulation state. ")
-                print("Detected " + str(anc_count) " peers currently Anchored. ")
+                print("Detected " + str(tri_count) + " peers currently in TTE / Triangulation state. ")
+                print("Detected " + str(anc_count) + " peers currently Anchored. ")
                 print("\033[1;33m[*]\033[0m Script will sleep for" + rand_sleep + "seconds and try again.")
                 time.sleep(rand_sleep)
     
