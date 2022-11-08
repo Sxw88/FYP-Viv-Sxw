@@ -225,7 +225,7 @@ def runscan(discovery_time, rssi_threshold, fast_mode=False, show_all=False, ver
     # Run discovery for discovery_time
     adapter.StartDiscovery()
     GLib.timeout_add_seconds(discovery_time, end_discovery)
-    print('\nFinding nearby devices...')
+    print('\nFinding nearby devices... (' + str(discovery_time) + " seconds)")
 
     try:
         mainloop.run()
@@ -235,7 +235,6 @@ def runscan(discovery_time, rssi_threshold, fast_mode=False, show_all=False, ver
 startScan()
 
 if __name__ == "__main__":
-    runscan(5, -90, fast_mode=True)
     runscan(5, -90, fast_mode=True)
     runscan(5, -90, fast_mode=True)
 

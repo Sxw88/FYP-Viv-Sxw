@@ -22,6 +22,9 @@ from ServoDriver import ServoDriver
 sys.path.append("./ble")
 from ble_rssi import getJSONData
 
+sys.path.append("./batman")
+from WxAdHocComm import WxAdHocComm
+
 next_step   = "non"
 adist       = 50        # How many centimeters apart between the swarm robots at anchored state
 srv         = None      # Servo Driver Object
@@ -112,6 +115,10 @@ class Initialisation(State):
         # Update current state in the 'state' file
         with open("state", "w") as f_write:
             f_write.write(next_step+"\n")
+
+        # Reset list of known peers in the 'known_peers' file
+        with open("known_peers", "w") as f_write:
+            f_write.write("x")
         
         # Initialize the Servo Driver object
         global srv
@@ -136,16 +143,14 @@ class Initialisation(State):
             anc_count = 0 # total number of peers in init-anchoring / anchored states   
             
             # Scan and check for peers which are online
-            print("\nScanning for peers (20 seconds):")
-            scanRSSI(20)
-            
+            scanRSSI(30)
+
             # Check for any anchored peers from RSSI.json file
             with open("./ble/RSSI.json", "r") as f_rssi:
                 
                 print("Checking for peers in Init-Anchoring / Anchored states:")
                 rssi_list = json.load(f_rssi)
                 
-
                 for device in rssi_list:
                     device_state = getJSONData(rssi_list, device, "State")
                     #print("Device MAC: " + str(device) + "\nDevice State: " + str(device_state) + "\n")
@@ -340,8 +345,8 @@ class Localization(State):
         while next_step == "lcl":
             
             # Scan for peers currently in TTE/ Triangulation state
-            print("\nScanning for peers (20 seconds):")
-            scanRSSI(20)
+            scanRSSI(30)
+            
             tri_count = 0
             anc_count = 0           # This is used later to determine whether or not to proceed with Triangulation (SPECIAL CASE)
             lcl_list = []           # list of robots currently in the localisation process 

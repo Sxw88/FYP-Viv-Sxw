@@ -27,3 +27,7 @@ sudo ifconfig bat0 up
 
 # Assign static IP address
 sudo /home/pi/FYP-Viv-Sxw/batman/get-IP-static.sh
+
+# sleep and start Wireless Ad-Hoc Server
+sleep 10
+./WxAdHocComm.py > udp.log

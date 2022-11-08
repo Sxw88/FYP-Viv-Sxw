@@ -91,6 +91,7 @@ class PiS1Service(Service):
         Service.__init__(self, bus, index, self.PI_SVC_UUID, True)
         self.add_characteristic(TestCharacteristic(bus, 0, self))
         self.add_characteristic(StateCharacteristic(bus, 1, self))
+        self.add_characteristic(PeersCharacteristic(bus, 2, self))
 
 
 class TestCharacteristic(Characteristic):
@@ -136,14 +137,46 @@ class StateCharacteristic(Characteristic):
             self, bus, index, self.uuid, ["encrypt-read"], service,
         )
 
-        self.value = bytearray("non", encoding="utf8")
+        self.value = bytearray("unb", encoding="utf8")
         self.add_descriptor(CharacteristicUserDescriptionDescriptor(bus, 1, self))
 
     def ReadValue(self, options):
         """Update the state value and then return value to requester"""
         
+        self.value = bytearray("unb", encoding="utf8")
+
         with open("../state") as f_readstate:
             updated_value = f_readstate.read()
+            self.value = bytearray(updated_value[:-1], encoding="utf8")
+
+        logger.info("read value: " + repr(self.value))
+        return self.value
+
+    def WriteValue(self, value, options):        
+        if not self.writable:
+            raise NotPermittedException()
+        self.value = value
+
+
+class PeersCharacteristic(Characteristic):
+    uuid = "33333333-3333-3333-3333-333333333333"
+    description = b"List of known peers"
+
+    def __init__(self, bus, index, service):
+        Characteristic.__init__(
+            self, bus, index, self.uuid, ["encrypt-read"], service,
+        )
+
+        self.value = bytearray("x", encoding="utf8")
+        self.add_descriptor(CharacteristicUserDescriptionDescriptor(bus, 1, self))
+
+    def ReadValue(self, options):
+        """Read the file "known_peers" and then return value to requester"""
+
+        self.value = bytearray("x", encoding="utf8")
+
+        with open("../known_peers") as f_readpeers:
+            updated_value = f_readpeers.read()
             self.value = bytearray(updated_value[:-1], encoding="utf8")
 
         logger.info("read value: " + repr(self.value))
