@@ -10,6 +10,7 @@ import random
 from abc import ABC, abstractmethod
 from GraphEx import (
         scanRSSI, 
+        compareKnownPeers,
         makeKey, 
         getDistance, 
         rssi_to_distance,
@@ -118,7 +119,7 @@ class Initialisation(State):
 
         # Reset list of known peers in the 'known_peers' file
         with open("known_peers", "w") as f_write:
-            f_write.write("x")
+            f_write.write("[]")
         
         # Initialize the Servo Driver object
         global srv
@@ -144,6 +145,9 @@ class Initialisation(State):
             
             # Scan and check for peers which are online
             scanRSSI(30)
+            missing_peers = str(compareKnownPeers())
+            if missing_peers != "[]":
+                print("\033[1;33mWarning:\033[0m These peers have not been scanned: " + missing_peers)
 
             # Check for any anchored peers from RSSI.json file
             with open("./ble/RSSI.json", "r") as f_rssi:
@@ -310,7 +314,7 @@ class InitAnchoring(State):
 
 
     # Proceeds to Anchored state 
-    def startAnchored(self) -> None:
+    def startAnchored(self) -> None: 
         print("\033[1;33m[*]\033[0m Switching to the Anchored state...")
         print("\n-------------------------------------------------------------------------------\n")
         self.fsa.setFSA(Anchored())
@@ -333,11 +337,12 @@ class InitAnchoring(State):
 class Localization(State):
     """ This state is similar to initialisation, robots will loop in this step while waiting for
         for other robots to complete the TTE/ Triangulation state
-    """ #Pseudocode : loop (check for peers in TTE/Tri states - wait some time) - wait for your turn - decide TTE/Tri state 
+    """ 
     
     def __init__(self):
         print("\033[1;32m[*]\033[0m Currently in the Localization state")
         # main code for Localization goes here
+        #Pseudocode : loop (check for peers in TTE/Tri states - wait some time) - wait for your turn - decide TTE/Tri state 
         
         global next_step
         global unique_ID
@@ -389,7 +394,7 @@ class Localization(State):
                     
                     anc_list = sorted(anc_list)     # sort the list, 
                     try:
-                        anc_list = anc_list[:3]         # then take the first 3 elements (nearest 3 nodes
+                        anc_list = anc_list[-3:]         # then take the last 3 elements (nearest 3 anchored nodes)
                     except:
                         print("\033[1;31mError: \033[0mItems not found in ANC_LIST")
                     
@@ -422,23 +427,17 @@ class Localization(State):
                 print("\033[1;33m[*]\033[0m Script will sleep for" + rand_sleep + "seconds and try again.")
                 time.sleep(rand_sleep)
     
-    # Travel-to-Edge if needed
-    def startTTE(self) -> None:
-        print("\033[1;33m[*]\033[0m Switching to the Travel-to-Edge state...")
-        time.sleep(0.3)
-        print("*")
-        time.sleep(0.3)
-        print("*")
-        self.fsa.setFSA(TTE())
-    
     # Enters Triangulation state if no TTE needed
     def startTriangulation(self) -> None:
         print("\033[1;33m[*]\033[0m Switching to the Triangulation state...")
-        time.sleep(0.3)
-        print("*")
-        time.sleep(0.3)
-        print("*")
+       	print("\n-------------------------------------------------------------------------------\n") 
         self.fsa.setFSA(Triangulation())
+    
+    # Travel-to-Edge if needed
+    def startTTE(self) -> None:
+        print("\033[1;33m[*]\033[0m Switching to the Travel-to-Edge state...")
+        print("\n-------------------------------------------------------------------------------\n")
+        self.fsa.setFSA(TTE())
 
     # Irrelevant states
     def startInitAnchoring(self) -> None:
@@ -452,31 +451,26 @@ class Localization(State):
 
 
 
+# pseudocode for triangulation process: 
 class TTE(State):
 
     def __init__(self):
         print("\033[1;32m[*]\033[0m Currently in the Travel-to-Edge (TTE) state")
         # Main code for Travelling-to-Edge process goes here
         global next_step
-        next_step = "tri"
-
-    # Enters Triangulation state if TTE successful
-    def startTriangulation(self) -> None:
-        print("\033[1;33m[*]\033[0m Switching to the Triangulation state...")
-        time.sleep(0.3)
-        print("*")
-        time.sleep(0.3)
-        print("*")
-        self.fsa.setFSA(Triangulation())
+        next_step = "tri" 
 
     # Enters Localization state if TTE is NOT successful
     def startLocalization(self) -> None:
         print("\033[1;33m[*]\033[0m Switching to the Localization state...")
-        time.sleep(0.3)
-        print("*")
-        time.sleep(0.3)
-        print("*")
+        print("\n-------------------------------------------------------------------------------\n")
         self.fsa.setFSA(Localization())
+
+    # Enters Triangulation state if TTE successful
+    def startTriangulation(self) -> None:
+        print("\033[1;33m[*]\033[0m Switching to the Triangulation state...")
+        print("\n-------------------------------------------------------------------------------\n")
+        self.fsa.setFSA(Triangulation())
 
     # Irrelevant states
     def startInitAnchoring(self) -> None:
@@ -495,25 +489,101 @@ class Triangulation(State):
     def __init__(self):
         print("\033[1;32m[*]\033[0m Currently in the Triangulation state")
         # Main code for Triangulation process goes here
+        
         global next_step
         next_step = "anc"
+            
+	# Scan RSSI of peers
+        estDist(10, 3)
+        # get closest anchored peers (REF1 and REF2)
+        rssi_list = None
+        with open("./ble/RSSI.json") as f_read:
+            rssi_list = json.load(f_read)
+        
+        # get REF1 and d1
+        global REF1
+        REF1 = None
+        d1 = 10000      # initialise distance d1 to 100 meters for comparison
+        # get REF2 and d2
+        global REF2
+        REF2 = None
+        d2 = 10000      # initialise distance d2 to 100 meters for comparison
+
+        for device in rssi_list:
+            dist = int(rssi_to_distance(getJSONData(rssi_list, device, "RSSI")*100))
+            # store distance in variable d1 and d2
+            if getJSONData(rssi_list, device, "State") == "anc":
+                if dist < d1:
+                    REF1 = device
+                    d1 = dist 
+                elif dist < d2: 
+                    REF2 = device
+                    d2 = dist
+
+		
+	# Move fixed distance df
+        df = 50
+        srv.moveStraight(df)
+
+	# Scan RSSI of peers again, get updated distance to REF1 and REF2
+        estDist(10, 3)
+        with open("./ble/RSSI.json") as f_read:
+            rssi_list = json.load(f_read)
+        
+        global adist
+        d3 = 0
+        d4 = 0
+
+        # store distance in variables d3 and d4
+        for device in rssi_list:
+            if device == REF1:
+                d3 = int(rssi_to_distance(getJSONData(rssi_list, device, "RSSI")*100))
+            elif device == REF2:
+                d4 = int(rssi_to_distance(getJSONData(rssi_list, device, "RSSI")*100))
+
+	# Compute rotational angle using known information, d1, d2, d3, d4, df 
+        rot_degrees = calc_dir_align(adist, d1, d2, d3, d4, df)
+	# and then carry out the rotation
+        srv.rotateSelf90(rot_degrees, clockwise=True)
+
+	# Move fixed distance df and compare updated distance
+        srv.moveStraight(df)
+        estDist(10, 3)
+        with open("./ble/RSSI.json") as f_read:
+            rssi_list = json.load(f_read)
+        
+        d5 = 0
+        d6 = 0
+        
+        for device in rssi_list:
+            if device == REF1:
+                d5 = int(rssi_to_distance(getJSONData(rssi_list, device, "RSSI")*100))
+            elif device == REF2:
+                d6 = int(rssi_to_distance(getJSONData(rssi_list, device, "RSSI")*100))
+                        
+	# if moved further from REF2
+        if d6 > d4:
+	    # rotate 180
+            srv.rotateSelf90(180)
+
+        # Compute distance to travel and rotation angle
+        list_dist_rot = calc_dist_dir_tri(adist, d5, d6)
+
+        # move to position
+        srv.rotateSelf90(list_dist_rot[1])
+        srv.moveStraight(list_dist_rot[0])
+
 
     # Enters Localization state if Triangulation is NOT successful
     def startLocalization(self) -> None:
         print("\033[1;33m[*]\033[0m Switching to the Localization state...")
-        time.sleep(0.3)
-        print("*")
-        time.sleep(0.3)
-        print("*")
+        print("\n-------------------------------------------------------------------------------\n")
         self.fsa.setFSA(Localization())
 
     # Proceeds to Anchored stateif Triangulation is successful
     def startAnchored(self) -> None:
         print("\033[1;33m[*]\033[0m Switching to the Anchored state...")
-        time.sleep(0.3)
-        print("*")
-        time.sleep(0.3)
-        print("*")
+        print("\n-------------------------------------------------------------------------------\n")
         self.fsa.setFSA(Anchored())
     
     # Irrelevant states
@@ -532,7 +602,10 @@ class Anchored(State):
 
     def __init__(self):
         print("\033[1;32m[*]\033[0m Successfully entered the Anchored state")
-        # Code for Anchored state goes here
+        # Code for Anchored stattime.sleep(0.3)
+        print("*")
+        time.sleep(0.3)
+        print("*")
         time.sleep(3)
 
     def startAnchored(self) -> None:
@@ -579,8 +652,6 @@ def startFSA():
             myRobot.startTriangulation()
         elif next_step == "anc":
             myRobot.startAnchored()
-        
-        #myRobot.presentState()
 
 
 if __name__ == "__main__":

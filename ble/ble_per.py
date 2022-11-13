@@ -98,14 +98,14 @@ class TestCharacteristic(Characteristic):
     uuid = "11111111-1111-1111-1111-111111111111"
     #uUID = "12345678-9abc-def0-1234-56789abcdef0"
 
-    description = b"Dummy characteristic to showcase BLE communication"
+    description = b"Characteristic to maintain BLE connection - similar to heartbeat protocol"
 
     def __init__(self, bus, index, service):
         Characteristic.__init__(
             self, bus, index, self.uuid, ["encrypt-read", "encrypt-write"], service,
         )
 
-        self.value = bytearray("TEST VALUE 123", encoding="utf8")
+        self.value = bytearray("Up & Reachable", encoding="utf8")
         self.add_descriptor(CharacteristicUserDescriptionDescriptor(bus, 1, self))
 
     def ReadValue(self, options):

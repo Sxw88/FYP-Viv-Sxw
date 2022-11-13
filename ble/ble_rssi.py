@@ -19,6 +19,12 @@ SCAN_FAST_MODE  = False
 SCAN_SHOW_ALL   = False
 VERBOSE_MODE    = True
 SCANNED_HOSTS   = []        # List of hosts which appeared in a scan
+UNIQUE_ID       = 20
+
+with open("/home/pi/FYP-Viv-Sxw/info.add") as input_file:
+    UNIQUE_ID = input_file.readline()
+    UNIQUE_ID = input_file.readline()
+    UNIQUE_ID = UNIQUE_ID[10:-1]
 
 def write_to_log(address, rssi):
     """Write device and rssi values to a log file"""
@@ -44,11 +50,13 @@ def saveInfo_RSSI(J_LIST, BLE_MAC, field_name, field_RSSI):
     state = "unk"
     # get the state from the swarm robot
     if SCAN_FAST_MODE == False:
-        try:
-            CHARACTERISTIC_UUID = "22222222-2222-2222-2222-222222222222"
-            state = readCharacteristic(BLE_MAC, SERVICE_UUID, CHARACTERISTIC_UUID)
-        except:
-            print("\033[1;31mError:\033[0m Unable to read state of swarm robot")
+        while state == "unk":
+            try:
+                CHARACTERISTIC_UUID = "22222222-2222-2222-2222-222222222222"    # hard coded to get the state
+                state = readCharacteristic(BLE_MAC, SERVICE_UUID, CHARACTERISTIC_UUID)
+            except:
+                print("\033[1;31mError:\033[0m Unable to read state of swarm robot")
+                state = "unk"
 
     # New Key-Value pair added to JSON_LIST
     # Using the Bluetooth MAC as the unique key
@@ -72,11 +80,13 @@ def update_RSSI(J_LIST, BLE_MAC, key, new_value):
     # get the state from the swarm robot
     if SCAN_FAST_MODE == False and getJSONData(json_list, BLE_MAC, "State") != "anc":
         # Query the current mode via BT central client
-        try:
-            CHARACTERISTIC_UUID = "22222222-2222-2222-2222-222222222222"
-            state = readCharacteristic(BLE_MAC, SERVICE_UUID, CHARACTERISTIC_UUID)
-        except:
-            print("\033[1;31mError:\033[0m Unable to read state of swarm robot")
+        while state == "unk":
+            try:
+                CHARACTERISTIC_UUID = "22222222-2222-2222-2222-222222222222"    # hard coded to get the state
+                state = readCharacteristic(BLE_MAC, SERVICE_UUID, CHARACTERISTIC_UUID)
+            except:
+                print("\033[1;31mError:\033[0m Unable to read state of swarm robot")
+                state = "unk"
     else:
         # Else maintain current state
         state = getJSONData(json_list, BLE_MAC, "State")
@@ -179,6 +189,26 @@ def end_discovery():
     with open('/home/pi/FYP-Viv-Sxw/ble/RSSI.json', 'w') as output_file:
         json.dump(JSON_LIST, output_file, indent=2)
 
+    # update known_peers file
+    peers_list = []
+    
+    with open('/home/pi/FYP-Viv-Sxw/known_peers', 'r') as input_file:
+        peers_list = input_file.read()        # read from file 
+    peers_list = eval(peers_list)
+    
+    if int(UNIQUE_ID) not in peers_list:
+        peers_list.append(int(UNIQUE_ID))
+    
+    for device in JSON_LIST:
+        device_uID = int(getJSONData(JSON_LIST, device, "Name")[7:])
+        if device_uID not in peers_list: 
+            peers_list.append(device_uID)
+    
+    peers_list.sort()
+    
+    with open('/home/pi/FYP-Viv-Sxw/known_peers', 'w') as output_file:        
+        output_file.write(str(peers_list))      # write to file
+
 def new_iface(path, iface_props):
     """If a new dbus interfaces is a device, add it to be  monitored"""
     device_addr = iface_props.get('org.bluez.Device1', {}).get('Address')
@@ -235,7 +265,7 @@ def runscan(discovery_time, rssi_threshold, fast_mode=False, show_all=False, ver
 startScan()
 
 if __name__ == "__main__":
-    runscan(5, -90, fast_mode=True)
-    runscan(5, -90, fast_mode=True)
-
+    runscan(3, -90, fast_mode=True)
+    runscan(3, -90, fast_mode=True)
+    
 

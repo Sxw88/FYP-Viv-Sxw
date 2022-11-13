@@ -15,6 +15,8 @@ import sys
 sys.path.append("./ble")
 import ble_rssi as blescan
 from ble_rssi import getJSONData
+from ble_rssi import UNIQUE_ID
+import ble_cen
 
 sys.path.append("./batman")
 from WxAdHocComm import WxAdHocComm
@@ -94,8 +96,65 @@ def getAngletoRefNode(d1, d2, dm):
         theta = 180 - theta
         return int(theta)
     except:
-        print("Math error: try again.")
+        print("\033[1;31mMath error:\033[0m try again.")
         return -1
+
+
+def calc_dist_dir_tri(d0, d1, d2, debug=False):
+    """calculate angle (in degrees) required for moving towards triangle position"""
+
+    try:
+        var_x = round((((d0 * d0) + (d1 * d1) - (d2 * d2))/(2 * d0 * d1)), 4)
+        if debug:
+            print("var x: " + str(var_x))
+        theta1 = math.degrees(math.acos(var_x))
+        if debug:
+            print("theta1: " + str(theta1))
+
+        var_y = math.cos(math.radians(60 - theta1))
+        if debug:
+            print("\nvar y: " + str(var_y))
+        d = round(math.sqrt((d1 * d1) + (d0 * d0) - (2 * d1 * d0 * var_y)), 2)
+        if debug:
+            print("value of d: " + str(d))
+
+        var_z = round((((d1 * d1) + (d * d) - (d0 * d0)) / (2 * d1 * d)), 4)
+        if debug:
+            print("\nvar z: " + str(var_z))
+        theta2 = math.degrees(math.acos(var_z))
+        if debug:
+            print("theta2: " + str(theta2))
+
+        theta = 180 - theta2 + theta1
+
+        return [d, theta]
+    except:
+        print("\033[1;31mMath error\033[0m: try again.")
+        return [0,0]
+
+
+def calc_dir_align(d0, d1, d2, d3, d4, df, debug=False):
+    """calculate angle (in degrees) required for alignment of robot's facing direction"""
+
+    try:
+        var_x = round((((df * df) + (d2 * d2) - (d4 * d4))/(2 * df * d2)), 4)
+        if debug:
+            print("var x: " + str(var_x))
+        theta1 = math.degrees(math.acos(var_x))
+        if debug:
+            print("theta1: " + str(theta1))
+
+        var_y = round((((d2 * d2) + (d0 * d0) - (d1 * d1))/(2 * d2 * d0)), 4)
+        if debug:
+            print("\nvar y: " + str(var_y))
+        theta2 = math.degrees(math.acos(var_y))
+        if debug:
+            print("theta2: " + str(theta2))
+
+        theta = theta1 - theta2
+        return int(theta)
+    except:
+        print("\033[1;31mMath error\033[0m: try again.")
 
 
 def factorial(num):
@@ -203,6 +262,56 @@ def scanRSSI(timeout, fast_mode=False, verbose=True):
         json.dump(NEW_LIST, output_file, indent=2)
 
 
+def compareKnownPeers():
+    """Compares the list of known peers stored in 'known_peers' file with all reachable peers"""
+    # get list of known peers from file
+    peers_list = []
+    missing_peers_list = []
+    with open("known_peers", "r") as read_file:
+        peers_list = read_file.read()
+    peers_list = eval(peers_list)
+
+    if comm_mode == "ble":
+        for device_uID in peers_list:
+            if device_uID != int(UNIQUE_ID):   # get list of known peers from peer devices
+                # need to get MAC address first
+                device_MAC = "CC:CC:CC:CC:CC:CC"
+                with open("./ble/RSSI.json", "r") as read_file:
+                    rssi_list = json.load(read_file)
+                    for device in rssi_list:
+                        if getJSONData(rssi_list, device, "Name") == "Pi-BLE-"+str(device_uID):
+                            device_MAC = device
+                            break
+                # establish BLE connection with the targeted device MAC
+                SERVICE_UUID        = "12345678-9abc-def0-1234-56789abcdef0"    # Hard coded
+                CHARACTERISTIC_UUID = "33333333-3333-3333-3333-333333333333"    # for peers lists exchange
+                compare_list = ble_cen.readCharacteristic(device_MAC, SERVICE_UUID, CHARACTERISTIC_UUID, verbose=False)
+                try:
+                    compare_list = eval(compare_list)
+                    diff_list = list(set(compare_list)-set(peers_list))
+                    for item in diff_list:
+                        if item not in missing_peers_list:
+                            missing_peers_list.append(item)
+                except:
+                    print("\033[1;31mERROR\033[0m List obtained via BLE is not formatted correctly.")
+
+    elif comm_mode == "bat":
+        for device_uID in peers_list:
+            if device_uID != int(UNIQUE_ID):
+                # send UDP request to retrieve list of known peers
+                compare_list = wxCom.sendUDP("192.168.1."+str(device_uID), "Get Peers")
+                
+                try:
+                    compare_list = eval(compare_list)
+                    diff_list = list(set(compare_list)-set(peers_list))
+                    for item in diff_list:
+                        if item not in missing_peers_list:
+                            missing_peers_list.append(item)
+                except:
+                    print("\033[1;31mERROR\033[0m List obtained via UDP is not formatted correctly.")
+
+    return missing_peers_list
+
 def estDist(rep, timeout, verbose=False, target_MAC=None):
     """estimate distance to neighbouring nodes by scanning RSSI repeatedly and getting the average value"""
 
@@ -264,6 +373,7 @@ def estDist(rep, timeout, verbose=False, target_MAC=None):
 if __name__ == "__main__":
 
     print("Hello World. This is a test on the communication module")
+    print(compareKnownPeers())
     #MAC1 = "53-02-16-1C-23-E5"
     #MAC2 = "F5-B9-EB-C9-B9-8C"
 

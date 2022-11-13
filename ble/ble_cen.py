@@ -163,6 +163,8 @@ def readCharacteristic(MAC, SERVICE_UUID, CHARACTERISTIC_UUID, verbose=False):
     vprint("\n--- bye ---\n", v=verbose)
     return read_value
 
+
+
 if __name__ == "__main__":
     # Match MAC of peripheral
     MAC = "dc:a6:32:d3:4f:11"
@@ -170,8 +172,8 @@ if __name__ == "__main__":
     # Match Service / Characteristic UUID in ble_per.py
     SERVICE_UUID = "12345678-9abc-def0-1234-56789abcdef0"
     CHARACTERISTIC_UUID = "11111111-1111-1111-1111-111111111111"
-    CHARACTERISTIC_UUID = "22222222-2222-2222-2222-222222222222"
-    CHARACTERISTIC_UUID = "33333333-3333-3333-3333-333333333333"
+    #CHARACTERISTIC_UUID = "22222222-2222-2222-2222-222222222222"
+    #CHARACTERISTIC_UUID = "33333333-3333-3333-3333-333333333333"
 
     MESSAGE = "1,2,3,4,5"
     
@@ -182,4 +184,4 @@ if __name__ == "__main__":
     #print(checkService(MAC, SERVICE_UUID, verbose=True))
 
     # Test readCharacteristic function
-    readCharacteristic(MAC, SERVICE_UUID, CHARACTERISTIC_UUID, verbose=True )
+    readCharacteristic(MAC, SERVICE_UUID, CHARACTERISTIC_UUID, verbose=False)

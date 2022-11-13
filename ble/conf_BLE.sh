@@ -26,6 +26,7 @@ echo "Startup script is run as root"
 # make new empty JSON file
 echo "{}" > RSSI.json
 echo "non" > ../state
+echo "[]" > ../known_peers
 echo " " > ./logs/peripheral.log
 
 sleep 10
