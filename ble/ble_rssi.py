@@ -265,7 +265,7 @@ def runscan(discovery_time, rssi_threshold, fast_mode=False, show_all=False, ver
 startScan()
 
 if __name__ == "__main__":
-    runscan(3, -90, fast_mode=True)
-    runscan(3, -90, fast_mode=True)
+    runscan(30, -90, fast_mode=True)
+    runscan(30, -90, fast_mode=True)
     
 

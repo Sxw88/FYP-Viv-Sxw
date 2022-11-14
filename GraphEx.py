@@ -100,7 +100,7 @@ def getAngletoRefNode(d1, d2, dm):
         return -1
 
 
-def calc_dist_dir_tri(d0, d1, d2, debug=False):
+def calc_dist_dir_tri(d0, d1, d2, debug=True):
     """calculate angle (in degrees) required for moving towards triangle position"""
 
     try:
@@ -133,7 +133,7 @@ def calc_dist_dir_tri(d0, d1, d2, debug=False):
         return [0,0]
 
 
-def calc_dir_align(d0, d1, d2, d3, d4, df, debug=False):
+def calc_dir_align(d0, d1, d2, d3, d4, df, debug=True):
     """calculate angle (in degrees) required for alignment of robot's facing direction"""
 
     try:
@@ -155,6 +155,7 @@ def calc_dir_align(d0, d1, d2, d3, d4, df, debug=False):
         return int(theta)
     except:
         print("\033[1;31mMath error\033[0m: try again.")
+        return 0
 
 
 def factorial(num):
@@ -206,7 +207,7 @@ def scanRSSI(timeout, fast_mode=False, verbose=True):
         blescan.runscan(timeout, -80, fast_mode=fast_mode, verbose=verbose)
         time.sleep(0.5)         # sleep for a while to avoid race condition
     elif comm_mode == "bat":
-        blescan.runscan(timeout/2, -80, fast_mode=True, verbose=verbose)
+        blescan.runscan(timeout, -80, fast_mode=True, verbose=verbose)
         time.sleep(0.5)         # sleep for a while to avoid race condition
         if fast_mode == False:
             # Scan and check for peers who are online
@@ -373,7 +374,9 @@ def estDist(rep, timeout, verbose=False, target_MAC=None):
 if __name__ == "__main__":
 
     print("Hello World. This is a test on the communication module")
-    print(compareKnownPeers())
+    scanRSSI(50)
+    
+    #print(compareKnownPeers())
     #MAC1 = "53-02-16-1C-23-E5"
     #MAC2 = "F5-B9-EB-C9-B9-8C"
 

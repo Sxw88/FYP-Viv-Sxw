@@ -60,7 +60,8 @@ class WxAdHocComm:
             elif "GET PEERS" in request.upper():
                 with open("/home/pi/FYP-Viv-Sxw/known_peers", "r") as f_read:
                     response = f_read.readline()
-                    response = response[:-1]
+                    if response[-1] == "\n":
+                        response = response[:-1]
             elif "TEST" in request.upper():
                 response = "Test message received"
             

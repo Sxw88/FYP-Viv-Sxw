@@ -15,6 +15,8 @@ from GraphEx import (
         getDistance, 
         rssi_to_distance,
         estDist,
+        calc_dir_align,
+        calc_dist_dir_tri,
         getAngletoRefNode, 
         LOCAL_BLE_MAC
         )
@@ -144,7 +146,7 @@ class Initialisation(State):
             anc_count = 0 # total number of peers in init-anchoring / anchored states   
             
             # Scan and check for peers which are online
-            scanRSSI(30)
+            scanRSSI(50)
             missing_peers = str(compareKnownPeers())
             if missing_peers != "[]":
                 print("\033[1;33mWarning:\033[0m These peers have not been scanned: " + missing_peers)
@@ -236,7 +238,7 @@ class InitAnchoring(State):
             rdist2 = 0
 
             # The first scan should take a longer time for better accuracy
-            estDist(15, 3, target_MAC=REF1.upper()) # scan 15 times for 3 seconds
+            estDist(15, 10, target_MAC=REF1.upper()) # scan 15 times for 3 seconds
             rdist1 = getDistance(LOCAL_BLE_MAC, REF1)
             
             # Move a fixed distance (mdist)
@@ -245,7 +247,7 @@ class InitAnchoring(State):
             # And then determine new distance to the reference node (rdist2)
             rdist2 = rdist1 + mdist + 10        # rdist2 should always be smaller
             while rdist2 > (rdist1 + mdist) or rdist2 < (rdist1 - mdist):    # than the sum of rdist and mdist
-                estDist(7, 3, target_MAC=REF1.upper()) # scan 7 times for 3 seconds
+                estDist(7, 10, target_MAC=REF1.upper()) # scan 7 times for 3 seconds
                 rdist2 = getDistance(LOCAL_BLE_MAC, REF1) 
 
             # Attempt clockwise rotation first
@@ -255,7 +257,6 @@ class InitAnchoring(State):
 
                 if rot == -1:  # repeat scanning and moving process again
                     print("\033[1;31m[*] Math Error: \033[0m Will proceed to scan again")
-                    #scanRSSI(10, fast_mode=True)
                     estDist(7, 3, target_MAC=REF1.upper()) # scan 7 times for 3 seconds
                     rdist1 = getDistance(LOCAL_BLE_MAC, REF1)
 
@@ -265,7 +266,7 @@ class InitAnchoring(State):
                     # And then determine new distance to the reference node (rdist2)
                     rdist2 = rdist1 + mdist + 10        # rdist2 should always be smaller
                     while rdist2 > (rdist1 + mdist) or rdist2 < (rdist1 - mdist):    # than the sum of rdist and mdist
-                        estDist(7, 3, target_MAC=REF1.upper()) # scan 7 times for 3 seconds
+                        estDist(7, 10, target_MAC=REF1.upper()) # scan 7 times for 3 seconds
                         rdist2 = getDistance(LOCAL_BLE_MAC, REF1)
 
             srv.rotateSelf90(rot, clockwise=True)
@@ -278,7 +279,7 @@ class InitAnchoring(State):
                 srv.moveStraight(mdist)
 
             # Scan and Check the new distance
-            estDist(7, 3, target_MAC=REF1.upper()) # scan 7 times for 3 seconds
+            estDist(7, 10, target_MAC=REF1.upper()) # scan 7 times for 3 seconds
             rdist1 =  getDistance(LOCAL_BLE_MAC, REF1)
             
             if rdist1 < adist + 10 and rdist1 > adist -10:
@@ -307,7 +308,7 @@ class InitAnchoring(State):
                     srv.moveStraight(mdist)
 
                 # Scan and Check the new distance
-                estDist(7, 3, target_MAC=REF1.upper()) # scan 7 times for 3 seconds
+                estDist(7, 10, target_MAC=REF1.upper()) # scan 7 times for 3 seconds
                 rdist1 =  getDistance(LOCAL_BLE_MAC, REF1)
                 
             next_step = "anc"
@@ -350,7 +351,7 @@ class Localization(State):
         while next_step == "lcl":
             
             # Scan for peers currently in TTE/ Triangulation state
-            scanRSSI(30)
+            scanRSSI(50)
             
             tri_count = 0
             anc_count = 0           # This is used later to determine whether or not to proceed with Triangulation (SPECIAL CASE)
@@ -381,7 +382,7 @@ class Localization(State):
                 # decide whether to proceed with TTE or Triangulation
                                         # if > 2 nodes anchored
                 if anc_count > 2:       # estimate distance - get distance to nearest 3 nodes
-                    estDist(10, 3)      # if any one node > int(adist*1.2) cm, goto "tri"                
+                    estDist(10, 10)     # if any one node > int(adist*1.2) cm, goto "tri"                
                                         # else goto "tte"
                     with open("./ble/RSSI.json", "r") as f_rssi:
                         rssi_list = json.load(f_rssi)
@@ -424,7 +425,7 @@ class Localization(State):
                 rand_sleep = random.randint(8, 18)
                 print("Detected " + str(tri_count) + " peers currently in TTE / Triangulation state. ")
                 print("Detected " + str(anc_count) + " peers currently Anchored. ")
-                print("\033[1;33m[*]\033[0m Script will sleep for" + rand_sleep + "seconds and try again.")
+                print("\033[1;33m[*]\033[0m Script will sleep for " + str(rand_sleep) + " seconds and try again.")
                 time.sleep(rand_sleep)
     
     # Enters Triangulation state if no TTE needed
@@ -494,9 +495,9 @@ class Triangulation(State):
         next_step = "anc"
             
 	# Scan RSSI of peers
-        estDist(10, 3)
+        estDist(10, 10)
         # get closest anchored peers (REF1 and REF2)
-        rssi_list = None
+        rssi_list = []
         with open("./ble/RSSI.json") as f_read:
             rssi_list = json.load(f_read)
         
@@ -508,17 +509,24 @@ class Triangulation(State):
         global REF2
         REF2 = None
         d2 = 10000      # initialise distance d2 to 100 meters for comparison
-
+        
+        #for device in rssi_list:
         for device in rssi_list:
-            dist = int(rssi_to_distance(getJSONData(rssi_list, device, "RSSI")*100))
+            #dist = int(rssi_to_distance(getJSONData(rssi_list, device, "RSSI"))*100)
+            dist = getDistance(device, LOCAL_BLE_MAC)
+            print("Device: " + device + ", distance: " + str(dist) + ", State: " + str(getJSONData(rssi_list,device,"State")) + ", RSSI: " + str(getJSONData(rssi_list, device, "RSSI")))
             # store distance in variable d1 and d2
             if getJSONData(rssi_list, device, "State") == "anc":
-                if dist < d1:
+                if dist <= d1:
+                    REF2 = REF1
                     REF1 = device
+                    d2 = d1
                     d1 = dist 
-                elif dist < d2: 
+                    print("Reference node 1: " + device)
+                elif dist <= d2: 
                     REF2 = device
                     d2 = dist
+                    print("Reference node 2: " + device)
 
 		
 	# Move fixed distance df
@@ -526,7 +534,7 @@ class Triangulation(State):
         srv.moveStraight(df)
 
 	# Scan RSSI of peers again, get updated distance to REF1 and REF2
-        estDist(10, 3)
+        estDist(10, 10)
         with open("./ble/RSSI.json") as f_read:
             rssi_list = json.load(f_read)
         
@@ -537,29 +545,35 @@ class Triangulation(State):
         # store distance in variables d3 and d4
         for device in rssi_list:
             if device == REF1:
-                d3 = int(rssi_to_distance(getJSONData(rssi_list, device, "RSSI")*100))
+                #d3 = int(rssi_to_distance(getJSONData(rssi_list, device, "RSSI"))*100)
+                d3 = getDistance(LOCAL_BLE_MAC, device)
             elif device == REF2:
-                d4 = int(rssi_to_distance(getJSONData(rssi_list, device, "RSSI")*100))
+                #d4 = int(rssi_to_distance(getJSONData(rssi_list, device, "RSSI"))*100)
+                d4 = getDistance(LOCAL_BLE_MAC, device)
 
 	# Compute rotational angle using known information, d1, d2, d3, d4, df 
+        print("d0: " + str(adist) + ", d1: " + str(d1) + ", d2: " + str(d2) + ", d3: " + str(d3) + ", d4: " + str(d4))
         rot_degrees = calc_dir_align(adist, d1, d2, d3, d4, df)
 	# and then carry out the rotation
         srv.rotateSelf90(rot_degrees, clockwise=True)
 
 	# Move fixed distance df and compare updated distance
         srv.moveStraight(df)
-        estDist(10, 3)
+        estDist(10, 10)
         with open("./ble/RSSI.json") as f_read:
             rssi_list = json.load(f_read)
+            print("Read from RSSI.json: " + str(rssi_list))
         
         d5 = 0
         d6 = 0
         
         for device in rssi_list:
             if device == REF1:
-                d5 = int(rssi_to_distance(getJSONData(rssi_list, device, "RSSI")*100))
+                #d5 = int(rssi_to_distance(getJSONData(rssi_list, device, "RSSI"))*100)
+                d5 = getDistance(LOCAL_BLE_MAC, device)
             elif device == REF2:
-                d6 = int(rssi_to_distance(getJSONData(rssi_list, device, "RSSI")*100))
+                #d6 = int(rssi_to_distance(getJSONData(rssi_list, device, "RSSI"))*100)
+                d6 = getDistance(LOCAL_BLE_MAC, device)
                         
 	# if moved further from REF2
         if d6 > d4:
@@ -567,6 +581,7 @@ class Triangulation(State):
             srv.rotateSelf90(180)
 
         # Compute distance to travel and rotation angle
+        print("d0: " + str(adist) + ", d1: " + str(d5) + ", d2: " + str(d6))
         list_dist_rot = calc_dist_dir_tri(adist, d5, d6)
 
         # move to position
@@ -602,7 +617,8 @@ class Anchored(State):
 
     def __init__(self):
         print("\033[1;32m[*]\033[0m Successfully entered the Anchored state")
-        # Code for Anchored stattime.sleep(0.3)
+        # Code for Anchored state
+        time.sleep(0.3)
         print("*")
         time.sleep(0.3)
         print("*")

@@ -13,8 +13,8 @@ class ServoDriver:
   __RIGHT_WHEEL          = 3        # port 3 = right wheel = East wheel
   __WHEEL_DIAMETER       = 66.5     # diameter of wheel = 66.5 mm
   __MOVE_SPEED           = 24       # movement speed of the robot, in cm/second ori = 24
-  __ANGULAR_SPEED        = 360      # angular speed of the robot, in degrees/second ori = 300
-  __PULSE_OFFSET         = 44        # offset value of pulse, in micro-seconds
+  __ANGULAR_SPEED        = 300      # angular speed of the robot, in degrees/second ori = 300
+  __PULSE_OFFSET         = 44       # offset value of pulse, in micro-seconds
 
   def __init__(self):
     # setup servo by creating a PCA9685 instance
@@ -31,20 +31,27 @@ class ServoDriver:
   def moveStraight(self, dist, backwards=False, pwr=0.4):
     if backwards == True:
       print("\n-- Left Wheel --")
-      self.servo.setServoPulse(self.__LEFT_WHEEL,   1500-int(pwr*800) +self.__PULSE_OFFSET)
-      #self.servo.setServoPulse(self.__LEFT_WHEEL, 500)
+      #self.servo.setServoPulse(self.__LEFT_WHEEL,   1500-int(pwr*800) +self.__PULSE_OFFSET)
+      self.servo.setServoPulse(self.__LEFT_WHEEL, 500)
       print("-- Right Wheel --")
-      self.servo.setServoPulse(self.__RIGHT_WHEEL,  1500+int(pwr*800) +self.__PULSE_OFFSET)
-      #self.servo.setServoPulse(self.__RIGHT_WHEEL, 2500)
+      #self.servo.setServoPulse(self.__RIGHT_WHEEL,  1500+int(pwr*800) +self.__PULSE_OFFSET)
+      self.servo.setServoPulse(self.__RIGHT_WHEEL, 2500)
     else:
       print("\n-- Left Wheel --")
-      self.servo.setServoPulse(self.__LEFT_WHEEL,   1500+int(pwr*800) +self.__PULSE_OFFSET)
-      #self.servo.setServoPulse(self.__LEFT_WHEEL, 2500)
+      #self.servo.setServoPulse(self.__LEFT_WHEEL,   1500+int(pwr*800) +self.__PULSE_OFFSET)
+      self.servo.setServoPulse(self.__LEFT_WHEEL, 2500)
       print("-- Right Wheel --")
-      self.servo.setServoPulse(self.__RIGHT_WHEEL,  1500-int(pwr*800) +self.__PULSE_OFFSET)
-      #self.servo.setServoPulse(self.__RIGHT_WHEEL, 500)
+      #self.servo.setServoPulse(self.__RIGHT_WHEEL,  1500-int(pwr*800) +self.__PULSE_OFFSET)
+      self.servo.setServoPulse(self.__RIGHT_WHEEL, 500)
 
     # calculations of the travel time, tt
+    if dist < 0:
+        dist = dist * -1
+        if backwards == True:
+            backwards = False
+        else:
+            backwards = True
+
     tt = round(dist / self.__MOVE_SPEED, 2)
     print("[m] Moving " + str(round(dist,1)) + " centimeters  in " + str(tt) + " seconds")
 
@@ -68,6 +75,13 @@ class ServoDriver:
 
 
     #calculation of rotation time, rt
+    if rot < 0:
+        rot = rot * -1
+        if clockwise == True:
+            clockwise = False
+        else:
+            clockwise = True
+
     rt = round(rot / self.__ANGULAR_SPEED, 2)
     print("[r] Rotating " + str(round(rot,1)) + " degrees  in " + str(rt) + " seconds")
 
@@ -79,6 +93,13 @@ class ServoDriver:
     r = rot
 
     print("Total rotation to be carried out: " + str(r) + " degrees" )
+    
+    if r < 0:
+        r = r * -1
+        if clockwise == True:
+            clockwise = False
+        else:
+            clockwise = True
 
     while True:
       if r > 90:
