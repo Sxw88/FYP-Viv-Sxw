@@ -8,7 +8,7 @@ Clone the project's GitHub repository to /home/pi, and then in the project's roo
 
 ### Potential issue with setting up Batman-adv
 bat0 not showing up as a Batman-adv interface after reboot. 
-This issue can be fixed by following this tutorial: https://github.com/binnes/WiFiMeshRaspberryPi/issues/8
+This issue can be fixed by following this solution: https://github.com/binnes/WiFiMeshRaspberryPi/issues/8
 
 ## Enabling the I2C interface
 In order for the servo driver to work, the i2c interface of the raspberry pi needs to be enabled. Use the command
