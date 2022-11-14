@@ -179,7 +179,7 @@ def rssi_to_distance(rssi):
     # Measured variables, can be tweaked
     P0 = -59
     d0 = 1
-    n = 4.0
+    n = 2.3
     L = 6
 
     x = math.log(10, math.e) * ((P0-rssi)/(10*n))
