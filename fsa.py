@@ -391,7 +391,7 @@ class Localization(State):
                             device_state = getJSONData(rssi_list, device, "State")
                             
                             if device_state == "anc":
-                                anc_list.append([device, getJSONData(rssi_list, device, "RSSI")])
+                                anc_list.append(getJSONData(rssi_list, device, "RSSI"))
                     
                     anc_list = sorted(anc_list)     # sort the list, 
                     try:
@@ -399,7 +399,7 @@ class Localization(State):
                     except:
                         print("\033[1;31mError: \033[0mItems not found in ANC_LIST")
                     
-                    next_step = "tte"                       # go to tte state unless if any one node > adist cm + 20%, then goto "tri"
+                    next_step = "tte"                       # go to tte state unless any one node > adist cm + 20%, then goto "tri"
                     for rssi in anc_list:                                              
                         if int(rssi_to_distance(rssi) * 100) > int(adist*1.2):
                             next_step = "tri"
@@ -459,7 +459,39 @@ class TTE(State):
         print("\033[1;32m[*]\033[0m Currently in the Travel-to-Edge (TTE) state")
         # Main code for Travelling-to-Edge process goes here
         global next_step
-        next_step = "tri" 
+        global adist
+
+        distance_to_travel = 50 #cm
+
+        while next_step == "tte":
+            srv.moveStraight(distance_to_travel)
+
+            # localize and determine if needed to TTE again:
+            estDist(10, 6)     # if any one node > int(adist*1.2) cm, goto "tri"                
+                                # else goto "tte"
+                                
+            anc_list = []
+            
+            with open("./ble/RSSI.json", "r") as f_rssi:
+                rssi_list = json.load(f_rssi)
+                
+                for device in rssi_list:
+                    device_state = getJSONData(rssi_list, device, "State")
+                    
+                    if device_state == "anc":
+                        anc_list.append(getJSONData(rssi_list, device, "RSSI"))
+            
+            anc_list = sorted(anc_list)     # sort the list, 
+            
+            try:
+                anc_list = anc_list[-3:]         # then take the last 3 elements (nearest 3 anchored nodes)
+            except:
+                print("\033[1;31mError: \033[0mItems not found in ANC_LIST")
+            
+            next_step = "tte"                       # remain in tte state unless any one node > adist cm + 20%, then goto "tri"
+            for rssi in anc_list:                                              
+                if int(rssi_to_distance(rssi) * 100) > int(adist*1.2):
+                    next_step = "tri"
 
     # Enters Localization state if TTE is NOT successful
     def startLocalization(self) -> None:
